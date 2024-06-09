@@ -334,7 +334,7 @@ def calc_loss_batch(input_batch, target_batch):
 def calc_loss_loader(data_loader, num_batches=None):
     total_loss = 0.
     if num_batches is None:
-        num_batches = max(1, len(data_loader))
+        num_batches = len(data_loader)
     else:
         num_batches = min(num_batches, len(data_loader))
         print("Dataloader: ", num_batches, ", ", len(data_loader))
@@ -344,7 +344,8 @@ def calc_loss_loader(data_loader, num_batches=None):
             total_loss += loss.item()
         else:
             break
-    return total_loss / num_batches
+
+    return total_loss / max(1, num_batches)
 
 def train_model_simple(train_loader, val_loader, optimizer, num_epochs,
                        eval_freq, eval_iter, start_context, tokenizer):
