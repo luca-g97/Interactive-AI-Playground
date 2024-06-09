@@ -159,6 +159,7 @@ def attachHooks(hookLoader, model):
         for source, (inputs, labels) in enumerate(hookLoader):
             # Uncomment for array structure like: [source, layer, neuron]
             #inputs = inputs.float()
+            inputs = inputs.float()
             inputs = inputs.to(device)
             _ = model(inputs)
 

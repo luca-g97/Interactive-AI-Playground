@@ -74,13 +74,10 @@ def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_sampl
     global train_samples, test_samples, eval_samples
     global train_dataloader, test_dataloader, eval_dataloader, x_train, y_train, x_test, y_test, x_eval, y_eval, train_data
     train_samples, test_samples, eval_samples = train_samplesParameter, test_samplesParameter, eval_samplesParameter
-    #print(len(trainSet), len(trainSet[0]), len(trainSet[1]))
+    
     x_train, y_train = trainSet[0][:train_samples], trainSet[1][:train_samples]
-    #print(len(trainSet[0][0]), len(x_train[0]), len(trainSet[0][1]), len(y_train[1]))
     x_test, y_test = testSet[0][:test_samples], testSet[1][:test_samples]
     x_eval, y_eval = x_test[:eval_samples], y_test[:eval_samples]
-
-    #[((x_train, y_train) for trainX, trainY in zip(x_train, y_train))]
 
     train_data = CustomMNISTData(mode="Train")
     test_data = CustomMNISTData(mode="Test")

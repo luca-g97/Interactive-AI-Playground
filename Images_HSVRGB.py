@@ -3,9 +3,10 @@ from torch.utils.data import Dataset
 from torch import nn
 import torch.optim as optim
 import numpy as np
+import matplotlib.patches as patches
 import Customizable_RENN as RENN
 
-colorsys, go, pio, device, DataLoader, trainSet, testSet, writer = "", "", "", "", "", "", "", ""
+colorsys, go, pio, device, DataLoader, trainSet, testSet, train_data, writer = "", "", "", "", "", "", "", "", ""
 model, criterion_class, chosen_optimizer, layers = "", "", "", ""
 train_samples, eval_samples, test_samples = 1, 1, 1
 dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = [], []
@@ -150,8 +151,9 @@ class CustomMNISTData(Dataset):
 
 def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_samplesParameter):
     global train_samples, test_samples, eval_samples
-    global train_dataloader, test_dataloader, eval_dataloader, x_train, y_train, x_test, y_test, x_eval, y_eval
+    global train_dataloader, test_dataloader, eval_dataloader, x_train, y_train, x_test, y_test, x_eval, y_eval, train_data
     train_samples, test_samples, eval_samples = train_samplesParameter, test_samplesParameter, eval_samplesParameter
+    
     x_train, y_train = trainSet[0][:train_samples], trainSet[1][:train_samples]
     x_test, y_test = testSet[0][:test_samples], testSet[1][:test_samples]
     x_eval, y_eval = x_test[:eval_samples], y_test[:eval_samples]
@@ -383,7 +385,7 @@ def createComparison(hsv_sample, rgb_predicted, blendedHSV, blendedRGB, weightin
     axs[3].set_title(f'RGB - Predicted: {tuple([int(x * 255) for x in rgb_predicted])}\nDifference: {difference}')
 
     for source, weight in weighting:
-        vectorsToShow.append([tuple([float("{:.2f}".format(x * 255)) for x in trainDataSet[source][1]]), weight, trainDataSet[source][1], source])
+        vectorsToShow.append([tuple([float("{:.2f}".format(x * 255)) for x in trainSet[source][1]]), weight, trainSet[source][1], source])
 
 
     blended_rgb = tuple(float("{:.2f}".format(x * 255)) for x in blendedRGB[0])
@@ -471,7 +473,9 @@ def getClosestSourcesPerNeuronAndLayer(sources, layersToCheck, mode=""):
                 plt.title(f"{mode} - Layer:  {int(layersToCheck[cLayer]/2)}, {closestSources} most used Sources")
                 plt.show()
 
-def blendIndividualImagesTogetherHSVRGB(mostUsedSources, layer=False):
+def blendIndividualImagesTogetherHSVRGB(mostUsedSources, closestSources, layer=False):
+    global trainSet
+    
     hsv = np.zeros(shape=[1, 3], dtype=float)
     rgb = np.zeros(shape=[1, 3], dtype=float)
     weighting = []
@@ -488,27 +492,27 @@ def blendIndividualImagesTogetherHSVRGB(mostUsedSources, layer=False):
         if(total > 0):
             if(closestSources < 2):
                 if(layer):
-                    hsv = (trainDataSet[wSource[0]][0])
-                    rgb = (trainDataSet[wSource[0]][1])
+                    hsv = (trainSet[wSource[0]][0])
+                    rgb = (trainSet[wSource[0]][1])
                     weighting = [[wSource[0], 1]]
                 else:
-                    hsv = (trainDataSet[wSource[0]][0])
-                    rgb = (trainDataSet[wSource[0]][1])
+                    hsv = (trainSet[wSource[0]][0])
+                    rgb = (trainSet[wSource[0]][1])
                     weighting = [[wSource.source, 1]]
             else:
                 if(layer):
-                    hsv += np.concatenate((trainDataSet[wSource[0]][0],)) * (wSource[1] / total)
-                    rgb += np.concatenate((trainDataSet[wSource[0]][1],)) * (wSource[1] / total)
+                    hsv += np.concatenate((trainSet[wSource[0]][0],)) * (wSource[1] / total)
+                    rgb += np.concatenate((trainSet[wSource[0]][1],)) * (wSource[1] / total)
                     weighting.append([wSource[0], wSource[1] / total])
                 else:
                     #print(f"Diff: {wSource.difference}, Total: {total}, Calculation: {(1 - (wSource.difference / total)) / closestSources}")
-                    hsv += np.concatenate((trainDataSet[wSource.source][0],)) * ((1 - (wSource.difference / total)) / closestSources)
-                    rgb += np.concatenate((trainDataSet[wSource.source][1],)) * ((1 - (wSource.difference / total)) / closestSources)
+                    hsv += np.concatenate((trainSet[wSource.source][0],)) * ((1 - (wSource.difference / total)) / closestSources)
+                    rgb += np.concatenate((trainSet[wSource.source][1],)) * ((1 - (wSource.difference / total)) / closestSources)
                     weighting.append([wSource.source, (1 - (wSource.difference / total)) / closestSources])
 
     return hsv, rgb, weighting
 
-def getClosestSourcesPerNeuronAndLayerHSVRGB(hsvSample, prediction, sources, mode=""):
+def getClosestSourcesPerNeuronAndLayerHSVRGB(hsvSample, prediction, sources, closestSources, visualizationChoice, mode=""):
     for cLayer, layer in enumerate(sources):
         weightedSourcesPerLayer = []
         totalDifferencePerLayer = 0
@@ -524,24 +528,24 @@ def getClosestSourcesPerNeuronAndLayerHSVRGB(hsvSample, prediction, sources, mod
                     totalDifferencePerLayer += difference
                     weightedSourcesPerNeuron.append(WeightedSource(**baseWeightedSource))
                     weightedSourcesPerLayer.append(WeightedSource(**baseWeightedSource))
-                if not(visualizationChoice.value == "Custom" and ((cNeuron < int(visualizeCustom[cLayer][0][0])) or (cNeuron > int(visualizeCustom[cLayer][0][1])))):
-                    hsv, rgb, weighting = blendIndividualImagesTogetherHSVRGB(weightedSourcesPerNeuron)
+                if not(visualizationChoice == "Custom" and ((cNeuron < int(visualizeCustom[cLayer][0][0])) or (cNeuron > int(visualizeCustom[cLayer][0][1])))):
+                    hsv, rgb, weighting = blendIndividualImagesTogetherHSVRGB(weightedSourcesPerNeuron, closestSources)
                     neuronImage = createComparison(hsvSample[0], prediction[0], hsv, rgb, weighting)
                     sortMode = mode
                     if(mode == "Activation"):
                         sortMode = "Act"
                     imagesPerLayer.append([neuronImage, f"{sortMode} - Layer: {cLayer}, Neuron: {cNeuron}"])
 
-        if not(visualizationChoice.value == "Per Layer Only"):
-            if not(mode == "Activation" and visualizationChoice.value == "Custom" and visualizeCustom[cLayer][1] == False):
+        if not(visualizationChoice == "Per Layer Only"):
+            if not(mode == "Activation" and visualizationChoice == "Custom" and visualizeCustom[cLayer][1] == False):
                 showIndividualImagesHSVRGB(imagesPerLayer)
 
-        if not(visualizationChoice.value == "Per Neuron Only"):
-            if not(mode == "Activation" and visualizationChoice.value == "Custom" and visualizeCustom[cLayer][1] == False):
+        if not(visualizationChoice == "Per Neuron Only"):
+            if not(mode == "Activation" and visualizationChoice == "Custom" and visualizeCustom[cLayer][1] == False):
                 weightedSourcesPerLayer = sorted(weightedSourcesPerLayer, key=lambda x: x.difference)
                 sourceCounter, mostUsed = getMostUsedPerLayer(weightedSourcesPerLayer)
                 counter = Counter(mostUsed)
-                hsv, rgb, weighting = blendIndividualImagesTogetherHSVRGB(counter.most_common()[:closestSources], True)
+                hsv, rgb, weighting = blendIndividualImagesTogetherHSVRGB(counter.most_common()[:closestSources], closestSources, True)
                 image = createComparison(hsvSample[0], prediction[0], hsv, rgb, weighting)
 
                 plt.figure(figsize=(28,28))
@@ -555,9 +559,7 @@ def predict(sample):
         model.eval()
         output = model(torch.flatten(sample))
     normalizedPredictions = normalizePredictions(output.cpu().numpy())
-    if(datasetChoice.value == "HSV-RGB"):
-        return output, 1.0
-    return np.argmax(normalizedPredictions), normalizedPredictions[np.argmax(normalizedPredictions)]
+    return output, 1.0
 
 def createImageWithPrediction(sample, true, prediction):
     sample = sample.to(device)
@@ -571,43 +573,28 @@ def normalizePredictions(array):
     max = np.max(array)
     return (array - min) / (max - min)
 
-def visualize(eval_samples, closestSources, showClosestMostUsedSources, visualizationChoice):
+def visualize(hidden_sizes, closestSources, showClosestMostUsedSources, visualizationChoice):
     global dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource
-    #Make sure to set new dictionarys for the hooks to fill - they are global!
-    dictionaryForSourceLayerNeuron = np.zeros((eval_samples, len(layers)*2, np.max(layerSizes)))
-    dictionaryForLayerNeuronSource = np.zeros((len(layers)*2, np.max(layerSizes), eval_samples))
 
-    with torch.no_grad():
-        model.eval()  # Set the model to evaluation mode
-        attachHooks(eval_dataloader)
-
+    dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = RENN.initializeEvaluationHook(hidden_sizes, eval_dataloader, eval_samples, model)
+    
     for pos, (sample, true) in enumerate(eval_dataloader):
         sample = sample.float()
         prediction = predict(sample)
 
-        if(visualizationChoice == "Weighted"):
-            sourcesSum, outputsSum, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, activationsByLayers, dictionaryForSourceLayerNeuron[pos], "Sum")
+        sourcesSum, outputsSum, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Sum")
+        getClosestSourcesPerNeuronAndLayerHSVRGB(sample, createImageWithPrediction(sample, true, prediction), sourcesSum, closestSources, visualizationChoice, "Sum")
 
-            mostUsedSourcesWithSum = getMostUsedSources(sourcesSum, "Sum")
-            blendedSourceImageSum = blendImagesTogether(mostUsedSourcesWithSum[:20], "Not Weighted")
+        sourcesActivation, outputsActivation, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Activation")
+        getClosestSourcesPerNeuronAndLayerHSVRGB(sample, createImageWithPrediction(sample, true, prediction), sourcesActivation, closestSources, visualizationChoice, "Activation")
 
-            sourcesActivation, outputsActivation, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, activationsByLayers, dictionaryForSourceLayerNeuron[pos], "Activation")
-            mostUsedSourcesWithActivation = getMostUsedSources(sourcesActivation, "Activation")
-            blendedSourceImageActivation = blendImagesTogether(mostUsedSourcesWithActivation[:20], "Not Weighted")
-
-            showImagesUnweighted(createImageWithPrediction(sample.reshape(28, 28), true, prediction), blendedSourceImageActivation, blendedSourceImageSum, mostUsedSourcesWithActivation[:showClosestMostUsedSources], mostUsedSourcesWithSum[:showClosestMostUsedSources])
-        else:
-            sourcesSum, outputsSum, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, activationsByLayers, dictionaryForSourceLayerNeuron[pos], "Sum")
-            mostUsedSourcesWithSum = getClosestSourcesPerNeuronAndLayer(sourcesSum, layerNumbersToCheck, "Sum")
-
-            sourcesActivation, outputsActivation, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, activationsByLayers, dictionaryForSourceLayerNeuron[pos], "Activation")
-            mostUsedSourcesWithActivation = getClosestSourcesPerNeuronAndLayer(sourcesActivation, layerNumbersToCheck, "Activation")
+        visualize3DCube(closestSources)
 
     #print(f"Time passed since start: {time_since_start(startTime)}")
 
 # @title Click `Show code` in the code cell. { display-mode: "form" }
 
-def visualize3DCube():
+def visualize3DCube(closestSources):
     layerNumber = 1 # @param {type:"slider", min:0, max:2, step:1}
     neuronNumber = 0 # @param {type:"slider", min:0, max:127, step:1}
 
