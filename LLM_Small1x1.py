@@ -4,16 +4,16 @@ import torch.optim as optim
 from torch.utils.data import Dataset
 import Customizable_RENN as RENN
 
-random, lorem, device, tiktoken, DataLoader = "", "", "", "", ""
+random, lorem, device, tiktoken, DataLoader, writer = "", "", "", "", "", ""
 train_samples, test_samples, eval_samples = "", "", ""
 GPT_CONFIG_124M, settings = "", ""
 train_loader, val_loader, eval_loader, tokenizer  = "", "", "", ""
 dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = [], []
 small1x1 = []
 
-def initializePackages(randomPackage, loremPackage, devicePackage, tiktokenPackage, DataLoaderPackage):
-    global random, lorem, device, tiktoken, DataLoader
-    random, lorem, device, tiktoken, DataLoader = randomPackage, loremPackage, devicePackage, tiktokenPackage, DataLoaderPackage
+def initializePackages(randomPackage, loremPackage, devicePackage, tiktokenPackage, DataLoaderPackage, writerPackage):
+    global random, lorem, device, tiktoken, DataLoader, writer
+    random, lorem, device, tiktoken, DataLoader, writer = randomPackage, loremPackage, devicePackage, tiktokenPackage, DataLoaderPackage, writerPackage
     
 def createUniqueCalculation(createdCalculations, xMin = 0, xMax = 9, yMin = 0, yMax = 9):
     x = random.randint(xMin, xMax)

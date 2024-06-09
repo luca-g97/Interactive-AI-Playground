@@ -5,14 +5,14 @@ import torch.optim as optim
 import numpy as np
 import Customizable_RENN as RENN
 
-colorsys, go, pio, device, DataLoader, trainSet, testSet = "", "", "", "", "", "", ""
-model, criterion_class, chosen_optimizer, layers = RENN.CustomizableRENN(10, [["", "", ""]], 10), "", "", ""
+colorsys, go, pio, device, DataLoader, trainSet, testSet, writer = "", "", "", "", "", "", "", ""
+model, criterion_class, chosen_optimizer, layers = "", "", "", ""
 train_samples, eval_samples, test_samples = 1, 1, 1
 dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = [], []
 
-def initializePackages(colorsysPackage, goPackage, pioPackage, DataLoaderPackage, devicePackage):
-    global colorsys, go, pio, device, DataLoader
-    colorsys, go, pio, device, DataLoader = colorsysPackage, goPackage, pioPackage, devicePackage, DataLoaderPackage
+def initializePackages(colorsysPackage, goPackage, pioPackage, DataLoaderPackage, devicePackage, writerPackage):
+    global colorsys, go, pio, device, DataLoader, writer
+    colorsys, go, pio, device, DataLoader, writer = colorsysPackage, goPackage, pioPackage, devicePackage, DataLoaderPackage, writerPackage
 
 def createTrainAndTestSet(trainSamples, testSamples, visualize=False):
     global trainSet, testSet

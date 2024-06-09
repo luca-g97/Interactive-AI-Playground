@@ -4,15 +4,15 @@ import torch.optim as optim
 import numpy as np
 import Customizable_RENN as RENN
 
-mnist, to_categorical, nn, DataLoader, device = "", "", "", "", ""
-train_dataloader, test_dataloader, eval_dataloader, x_train, y_train, x_test, y_test, x_eval, y_eval = "", "", "", "", "", "", "", "", ""
-model, criterion_class, chosen_optimizer, layers = RENN.CustomizableRENN(10, [["", "", ""]], 10), "", "", ""
+mnist, to_categorical, nn, DataLoader, device, writer = "", "", "", "", "", ""
+train_dataloader, test_dataloader, eval_dataloader, x_train, y_train, x_test, y_test, x_eval, y_eval, train_data = "", "", "", "", "", "", "", "", "", ""
+model, criterion_class, chosen_optimizer, layers = "", "", "", ""
 train_samples, eval_samples, test_samples = 1, 1, 1
 dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = [], []
 
-def initializePackages(mnistPackage, to_categoricalPackage, nnPackage, DataLoaderPackage, devicePackage):
-    global mnist, to_categorical, nn, DataLoader, device
-    mnist, to_categorical, nn, DataLoader, device = mnistPackage, to_categoricalPackage, nnPackage, DataLoaderPackage, devicePackage
+def initializePackages(mnistPackage, to_categoricalPackage, nnPackage, DataLoaderPackage, devicePackage, writerPackage):
+    global mnist, to_categorical, nn, DataLoader, device, writer
+    mnist, to_categorical, nn, DataLoader, device, writer = mnistPackage, to_categoricalPackage, nnPackage, DataLoaderPackage, devicePackage, writerPackage
 
 def createTrainAndTestSet():
     global trainSet, testSet, x_train, y_train, x_test, y_test, x_eval, y_eval
@@ -41,8 +41,8 @@ def createTrainAndTestSet():
     x_test = torch.from_numpy(x_test)
     y_test = torch.from_numpy(y_test)
     
-    trainSet = [(torch.flatten(x), torch.flatten(y)) for x, y in zip(x_train, y_train)]
-    testSet = [(torch.flatten(x), torch.flatten(y)) for x, y in zip(x_test, y_test)]
+    trainSet = (x_train, y_train)#[(torch.flatten(x), torch.flatten(y)) for x, y in zip(x_train, y_train)]
+    testSet = (x_test, y_test)#[(torch.flatten(x), torch.flatten(y)) for x, y in zip(x_test, y_test)]
     
     print(f"Created {len(trainSet)} Trainsamples & {len(testSet)} Testsamples")
     return trainSet, testSet
@@ -72,11 +72,15 @@ class CustomMNISTData(Dataset):
 
 def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_samplesParameter):
     global train_samples, test_samples, eval_samples
-    global train_dataloader, test_dataloader, eval_dataloader, x_train, y_train, x_test, y_test, x_eval, y_eval
+    global train_dataloader, test_dataloader, eval_dataloader, x_train, y_train, x_test, y_test, x_eval, y_eval, train_data
     train_samples, test_samples, eval_samples = train_samplesParameter, test_samplesParameter, eval_samplesParameter
+    #print(len(trainSet), len(trainSet[0]), len(trainSet[1]))
     x_train, y_train = trainSet[0][:train_samples], trainSet[1][:train_samples]
+    #print(len(trainSet[0][0]), len(x_train[0]), len(trainSet[0][1]), len(y_train[1]))
     x_test, y_test = testSet[0][:test_samples], testSet[1][:test_samples]
     x_eval, y_eval = x_test[:eval_samples], y_test[:eval_samples]
+
+    #[((x_train, y_train) for trainX, trainY in zip(x_train, y_train))]
 
     train_data = CustomMNISTData(mode="Train")
     test_data = CustomMNISTData(mode="Test")
@@ -90,10 +94,12 @@ def initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate):
     global model, criterion_class, chosen_optimizer, layers
     input_size = len(torch.flatten(torch.tensor(train_dataloader.dataset[0][0])))
     output_size = len(torch.flatten(torch.tensor(train_dataloader.dataset[0][1])))
+    #print(input_size, output_size)
     
     model = RENN.CustomizableRENN(input_size, hidden_sizes, output_size)
     model.to(device)
     layers = np.array(RENN.layers)
+    #print(layers)
     
     if(loss_function == "MSE"):
         criterion_class = nn.MSELoss()  # For regression
@@ -105,22 +111,24 @@ def initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate):
     elif(optimizer == "SGD"):
         chosen_optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
-def train(model, criterion_class,  optimizer, epochs=10):
+def train(epochs=10):
+    global model, chosen_optimizer, criterion_class 
     for epoch in range(epochs):
         model.train()
         train_loss = 0.0
-        #print(len(train_dataloader.dataset[0][0]))
         for images, classification in train_dataloader:
-            images = images.float()
+            #images = images.float()
             images = images.to(device)
-            classification = classification.float()
+            #classification = classification.float()
             classification = classification.to(device)
-            optimizer.zero_grad()
+            chosen_optimizer.zero_grad()
             output = model(images)
+            #print(output.shape, classification.shape)
             loss = criterion_class(output, classification)
             loss.backward()
-            optimizer.step()
+            chosen_optimizer.step()
             train_loss += loss.item()
+            writer.add_scalar("Loss/train", loss, epoch)
 
         # Validation loop
         model.eval()
@@ -136,11 +144,13 @@ def train(model, criterion_class,  optimizer, epochs=10):
                 val_loss += loss.item()
 
         # Print statistics
-        #print(f'Epoch {epoch+1}, Train Loss: {train_loss/len(train_dataloader)}, Validation Loss: {val_loss/len(test_dataloader)}')
+        print(f'Epoch {epoch+1}, Train Loss: {train_loss/len(train_dataloader)}, Validation Loss: {val_loss/len(test_dataloader)}')
+
 def trainModel(hidden_sizes, loss_function, optimizer, learning_rate, epochs):
     initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate)
-    train(model, criterion_class, chosen_optimizer, epochs=epochs)
-    return model, train_dataloader
+    train(epochs=epochs)
+    writer.flush()
+    #return model, train_dataloader
 
 def initializeHook(hidden_sizes, train_samples):
   hookDataLoader = DataLoader(train_data, batch_size=1, shuffle=False)
@@ -210,29 +220,6 @@ class WeightedSource:
   source: int
   difference: float
 
-def identifyClosestSources(dictionary, outputs, mode = ""):
-    if(mode == "Sum"):
-        layerNumbersToCheck = [idx*2 for idx, (name, layer, activation) in enumerate(layers)]
-    elif(mode == "Activation"):
-        layerNumbersToCheck = [(idx*2)+1 for idx, (name, layer, activation) in enumerate(layers) if getActivation(hidden_sizes, idx) != False]
-
-    layersToCheck = dictionary[layerNumbersToCheck]
-    outputsToCheck = outputs[layerNumbersToCheck]
-    identifiedClosestSources = np.empty((len(layersToCheck), np.max(layerSizes), closestSources), dtype=tuple)
-
-    #print(len(layersToCheck), len(outputsToCheck))
-    for currentLayer, layer in enumerate(layersToCheck):
-        for currentNeuron, neuron in enumerate(layer):
-            if(currentNeuron < layers[currentLayer][1].out_features):
-                #print(currentLayer, currentNeuron, len(neuron), outputsToCheck[currentLayer][currentNeuron], outputsToCheck.shape)
-                differencesBetweenSources = np.abs(neuron - np.full(len(neuron), outputsToCheck[currentLayer][currentNeuron]))
-                sortedSourceIndices = np.argsort(differencesBetweenSources) # for highest difference uncomment this: [::-1]
-                closestSourceIndices = sortedSourceIndices[:closestSources]
-                tuples = tuple((closestSourceIndices[i], neuron[closestSourceIndices[i]], abs(neuron[closestSourceIndices[i]]-outputsToCheck[currentLayer][currentNeuron])) for i in range(closestSources))
-                identifiedClosestSources[currentLayer][currentNeuron] = tuples
-
-    return identifiedClosestSources, outputsToCheck, layerNumbersToCheck
-
 def getMostUsed(sources):
     mostUsed = []
     sourceCounter = 0
@@ -298,6 +285,22 @@ def getClosestSourcesPerNeuronAndLayer(sources, layersToCheck, mode=""):
 
 """# Evaluation: Visual Blending"""
 
+def blendImagesTogether(mostUsedSources, mode):
+    image = Image.fromarray(np.zeros(shape=[28,28], dtype=np.uint8)).convert("RGBA")
+    weights = []
+    total = 0
+
+    if mode == "Not Weighted":
+        for sourceNumber, counter in mostUsedSources:
+            total += counter
+
+        for sourceNumber, counter in mostUsedSources:
+            #TODO: NORMALIZATION!!!
+            image = Image.blend(image, Image.fromarray(x_train[sourceNumber].numpy()*255).convert("RGBA"), (counter/total))
+            weights.append(counter/total)
+
+    return (image, weights)
+
 def blendIndividualImagesTogether(mostUsedSources, layer=False):
     image = Image.fromarray(np.zeros(shape=[28,28], dtype=np.uint8)).convert("RGBA")
 
@@ -333,8 +336,6 @@ def predict(sample):
         model.eval()
         output = model(torch.flatten(sample))
     normalizedPredictions = normalizePredictions(output.cpu().numpy())
-    if(datasetChoice.value == "HSV-RGB"):
-        return output, 1.0
     return np.argmax(normalizedPredictions), normalizedPredictions[np.argmax(normalizedPredictions)]
 
 def createImageWithPrediction(sample, true, prediction):
@@ -351,36 +352,31 @@ def normalizePredictions(array):
 
 """# Evaluation: Code"""
 
-def visualize(eval_samples, closestSources, showClosestMostUsedSources, visualizationChoice):
+def visualize(hidden_sizes, closestSources, showClosestMostUsedSources, visualizationChoice):
     global dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource
     #Make sure to set new dictionarys for the hooks to fill - they are global!
-    dictionaryForSourceLayerNeuron = np.zeros((eval_samples, len(layers)*2, np.max(layerSizes)))
-    dictionaryForLayerNeuronSource = np.zeros((len(layers)*2, np.max(layerSizes), eval_samples))
-    
-    with torch.no_grad():
-        model.eval()  # Set the model to evaluation mode
-        attachHooks(eval_dataloader)
+    dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = RENN.initializeEvaluationHook(hidden_sizes, eval_dataloader, eval_samples, model)
     
     for pos, (sample, true) in enumerate(eval_dataloader):
         sample = sample.float()
         prediction = predict(sample)
     
         if(visualizationChoice == "Weighted"):
-            sourcesSum, outputsSum, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, activationsByLayers, dictionaryForSourceLayerNeuron[pos], "Sum")
+            sourcesSum, outputsSum, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Sum")
     
-            mostUsedSourcesWithSum = getMostUsedSources(sourcesSum, "Sum")
+            mostUsedSourcesWithSum = RENN.getMostUsedSources(sourcesSum, closestSources, "Sum")
             blendedSourceImageSum = blendImagesTogether(mostUsedSourcesWithSum[:20], "Not Weighted")
     
-            sourcesActivation, outputsActivation, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, activationsByLayers, dictionaryForSourceLayerNeuron[pos], "Activation")
-            mostUsedSourcesWithActivation = getMostUsedSources(sourcesActivation, "Activation")
+            sourcesActivation, outputsActivation, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Activation")
+            mostUsedSourcesWithActivation = RENN.getMostUsedSources(sourcesActivation, closestSources, "Activation")
             blendedSourceImageActivation = blendImagesTogether(mostUsedSourcesWithActivation[:20], "Not Weighted")
     
             showImagesUnweighted(createImageWithPrediction(sample.reshape(28, 28), true, prediction), blendedSourceImageActivation, blendedSourceImageSum, mostUsedSourcesWithActivation[:showClosestMostUsedSources], mostUsedSourcesWithSum[:showClosestMostUsedSources])
         else:
-            sourcesSum, outputsSum, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, activationsByLayers, dictionaryForSourceLayerNeuron[pos], "Sum")
+            sourcesSum, outputsSum, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Sum")
             mostUsedSourcesWithSum = getClosestSourcesPerNeuronAndLayer(sourcesSum, layerNumbersToCheck, "Sum")
     
-            sourcesActivation, outputsActivation, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, activationsByLayers, dictionaryForSourceLayerNeuron[pos], "Activation")
+            sourcesActivation, outputsActivation, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Activation")
             mostUsedSourcesWithActivation = getClosestSourcesPerNeuronAndLayer(sourcesActivation, layerNumbersToCheck, "Activation")
     
     #print(f"Time passed since start: {time_since_start(startTime)}")

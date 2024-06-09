@@ -35,6 +35,7 @@ def checkIfActivationLayerExists(hidden_layers, layer):
 layers = []
 currentLayer = 0
 relevantLayerIndices = []
+
 def createLayers(layerName, layerType, activationLayerType):
     global currentLayer
     global layers
@@ -50,7 +51,7 @@ class CustomizableRENN(nn.Module):
     def __init__(self, input_size, hidden_layers, output_size):
         super(CustomizableRENN, self).__init__()
         #Add input and output layer to the hidden_layers
-        self.num_layers = (len(hidden_sizes))
+        self.num_layers = (len(hidden_layers))
         self.hidden_layers = hidden_layers
 
         for layer in range(self.num_layers):
@@ -186,7 +187,6 @@ def runHooks(train_dataloader, model, layersParameter=layers, llmType = False):
     source = 0
     dictionaryForSourceLayerNeuron = activationsBySources
     dictionaryForLayerNeuronSource = activationsByLayers
-    print(layers)
 
     attachHooks(train_dataloader, model)
     activationsBySources = dictionaryForSourceLayerNeuron
@@ -197,7 +197,7 @@ def initializeHook(train_dataloader, model, hidden_sizesParameter, train_samples
     hidden_sizes = hidden_sizesParameter
     totalLayers = len(layers)*2
     createDictionaries(hidden_sizes, totalLayers, train_samples)
-    runHooks(train_dataloader)
+    runHooks(train_dataloader, model)
 
 def initializeEvaluationHook(hidden_sizes, eval_dataloader, eval_samples, model):
     global dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource
@@ -212,7 +212,8 @@ def initializeEvaluationHook(hidden_sizes, eval_dataloader, eval_samples, model)
     return dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource
 
 def identifyClosestSources(closestSources, outputs, mode = ""):
-    print(closestSources)
+    global layers
+    
     dictionary = activationsByLayers
     if(mode == "Sum"):
         layerNumbersToCheck = [idx*2 for idx, (name, layer, activation) in enumerate(layers)]
@@ -220,6 +221,8 @@ def identifyClosestSources(closestSources, outputs, mode = ""):
         layerNumbersToCheck = [(idx*2)+1 for idx, (name, layer, activation) in enumerate(layers) if getActivation(hidden_sizes, idx) != False]
     else:
         layerNumbersToCheck = [idx for idx, _ in enumerate(layers)]
+
+    print(layerNumbersToCheck)
 
     layersToCheck = dictionary[layerNumbersToCheck]
     outputsToCheck = outputs[layerNumbersToCheck]
@@ -253,7 +256,7 @@ def getMostUsed(sources, mode=""):
 def getMostUsedSources(sources, closestSources, weightedMode=""):
     weightedSources = []
 
-    sourceCounter, mostUsed = getMostUsed(sources)
+    sourceCounter, mostUsed = getMostUsed(sources, weightedMode)
     counter = Counter(mostUsed)
 
     print(sourceCounter, counter.most_common())
