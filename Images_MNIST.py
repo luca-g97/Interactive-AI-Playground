@@ -71,7 +71,7 @@ class CustomMNISTData(Dataset):
 
         return torch.flatten(image), output
 
-def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_samplesParameter, seed=""):
+def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_samplesParameter, batch_size_training, batch_size_test, seed=""):
     global train_samples, test_samples, eval_samples, np, torch
     global train_dataloader, test_dataloader, eval_dataloader, trainSubset, testSubset
     train_samples, test_samples, eval_samples = train_samplesParameter, test_samplesParameter, eval_samplesParameter
@@ -83,15 +83,14 @@ def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_sampl
     trainSubset = Subset(trainDataSet, range(train_samples))
     testSubset = Subset(testDataSet, range(test_samples))
     evalSubset = Subset(testDataSet, range(test_samples, test_samples + eval_samples))
-    train_dataloader = DataLoader(trainSubset, batch_size=64, shuffle=False)
-    test_dataloader = DataLoader(testSubset, batch_size=64, shuffle=False)
+    train_dataloader = DataLoader(trainSubset, batch_size=batch_size_training, shuffle=False)
+    test_dataloader = DataLoader(testSubset, batch_size=batch_size_test, shuffle=False)
     eval_dataloader = DataLoader(evalSubset, batch_size=1, shuffle=False)
-    print(len(train_dataloader), len(test_dataloader), len(eval_dataloader))
 
 def initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate):
     global model, criterion_class, chosen_optimizer, layers
-    input_size = len(torch.flatten(torch.tensor(train_dataloader.dataset[0][0])))
-    output_size = len(torch.flatten(torch.tensor(train_dataloader.dataset[0][1])))
+    input_size = torch.flatten(train_dataloader.dataset[0][0]).numel()
+    output_size = torch.flatten(train_dataloader.dataset[0][1]).numel()
     #print(input_size, output_size)
     
     model = RENN.CustomizableRENN(input_size, hidden_sizes, output_size)

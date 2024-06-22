@@ -292,8 +292,8 @@ class GPTModel(nn.Module):
         logits = self.out_head(x)
         return logits
 
-def initializeDatasets(train_samples, test_samples, eval_samples, seed=""):
-    global torch
+def initializeDatasets(train_samples, test_samples, eval_samples, batch_size_training="", batch_size_test="", seed=""):
+    global torch, settings
 
     if(seed != ""):
         torch.manual_seed(seed)

@@ -166,8 +166,8 @@ def initializeTrainSet(trainSetMNIST, testSetMNIST):
     global trainDataSet, testDataSet, maxTrain, maxTest, trainSamplesChoice, testSamplesChoice, batchSizeTraining, batchSizeTest, trainingsLink, testLink
     trainDataSet = trainSetMNIST
     testDataSet = testSetMNIST
-    maxTrain = len(trainDataSet[0])
-    maxTest = len(testDataSet[0])
+    maxTrain = len(trainDataSet)
+    maxTest = len(testDataSet)
     trainSamplesChoice = createIntSlider(10000, min=1, max=maxTrain, description="Train Samples")
     testSamplesChoice = createIntSlider(2000, min=1, max=maxTest, description="Test Samples")
     batchSizeTraining = createIntSlider(64, min=1, max=maxTrain, description="Batchsize Training")
@@ -188,10 +188,7 @@ def updateTrainingTab():
 
     maxTrain = len(trainDataSet)
     maxTest = len(testDataSet)
-    if(datasetChoice.value == "MNIST"):
-        maxTrain = len(trainDataSet[0])
-        maxTest = len(testDataSet[0])
-    elif(datasetChoice.value == "Small 1x1"):
+    if(datasetChoice.value == "Small 1x1"):
         maxTrain = 80
         maxTest = 10
 
