@@ -206,7 +206,6 @@ def initializeEvaluationHook(hidden_sizes, eval_dataloader, eval_samples, model)
 def identifyClosestSources(closestSources, outputs, mode = ""):
     global layers
     
-    print(layers)
     dictionary = activationsByLayers
     if(mode == "Sum"):
         layerNumbersToCheck = [idx*2 for idx, (name, layerNumber, activation) in enumerate(layers)]
@@ -214,8 +213,6 @@ def identifyClosestSources(closestSources, outputs, mode = ""):
         layerNumbersToCheck = [(idx*2)+1 for idx, (name, layerNumber, activation) in enumerate(layers) if getActivation(hidden_sizes, idx) != False]
     else:
         layerNumbersToCheck = [idx for idx, _ in enumerate(layers)]
-
-    print(layerNumbersToCheck)
 
     layersToCheck = dictionary[layerNumbersToCheck]
     outputsToCheck = outputs[layerNumbersToCheck]
