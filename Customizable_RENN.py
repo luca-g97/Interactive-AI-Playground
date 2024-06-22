@@ -7,11 +7,12 @@ import LLM_Small1x1 as Small1x1
 layer, source, dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource, activationsBySources, activationsByLayers, totalLayers = "", "", "", "", "", "", ""
 llm, layerSizes, device, hidden_sizes, layers, layers, currentLayer, relevantLayerIndices = "", "", "", "", "", [], 0, []
 
-def initializePackages(devicePackage, seed):
+def initializePackages(devicePackage, seed=""):
     global device, np, torch 
     device = devicePackage
-    torch.manual_seed(seed)
-    np.random.seed(seed)
+    if(seed != ""):
+        torch.manual_seed(seed)
+        np.random.seed(seed)
 
 def getLayer(hidden_layers, layerNumber, input_size=10, output_size=10):
     if(hidden_layers[layerNumber][0] == "Linear"):

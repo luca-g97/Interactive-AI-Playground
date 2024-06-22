@@ -71,13 +71,14 @@ class CustomMNISTData(Dataset):
 
         return torch.flatten(image), output
 
-def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_samplesParameter, seed):
+def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_samplesParameter, seed=""):
     global train_samples, test_samples, eval_samples, np, torch
     global train_dataloader, test_dataloader, eval_dataloader, trainSubset, testSubset
     train_samples, test_samples, eval_samples = train_samplesParameter, test_samplesParameter, eval_samplesParameter
     
-    torch.manual_seed(seed)
-    np.random.seed(seed)
+    if(seed != ""):
+        torch.manual_seed(seed)
+        np.random.seed(seed)
 
     trainSubset = Subset(trainDataSet, range(train_samples))
     testSubset = Subset(testDataSet, range(test_samples))

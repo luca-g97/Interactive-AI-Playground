@@ -292,9 +292,11 @@ class GPTModel(nn.Module):
         logits = self.out_head(x)
         return logits
 
-def initializeDatasets(train_samples, test_samples, eval_samples, seed):
+def initializeDatasets(train_samples, test_samples, eval_samples, seed=""):
     global torch
-    torch.manual_seed(seed)
+
+    if(seed != ""):
+        torch.manual_seed(seed)
 
     createLLMLoaders(train_samples, test_samples, eval_samples)
 
