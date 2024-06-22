@@ -4,41 +4,38 @@ import numpy as np
 from collections import Counter
 import LLM_Small1x1 as Small1x1
 
-layer, source, dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource, activationsBySources, activationsByLayers, llm, totalLayers, device, hidden_sizes = "", "", "", "", "", "", "", "", "", [""]
-layerSizes = ""
+layer, source, dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource, activationsBySources, activationsByLayers, totalLayers = "", "", "", "", "", "", ""
+llm, layerSizes, device, hidden_sizes, layers, layers, currentLayer, relevantLayerIndices = "", "", "", "", "", [], 0, []
 
-def initializePackages(devicePackage):
-    global device
+def initializePackages(devicePackage, seed):
+    global device, np, torch 
     device = devicePackage
+    torch.manual_seed(seed)
+    np.random.seed(seed)
 
-def getLayer(hidden_layers, layer, input_size=10, output_size=10):
-    if(hidden_layers[layer][0] == "Linear"):
+def getLayer(hidden_layers, layerNumber, input_size=10, output_size=10):
+    if(hidden_layers[layerNumber][0] == "Linear"):
         return nn.Linear(input_size, output_size)
-    elif(hidden_layers[layer][0] == "Conv2d"):
+    elif(hidden_layers[layerNumber][0] == "Conv2d"):
         return nn.Conv2d(input_size, output_size)
     return False
 
-def getActivation(hidden_layers, layer):
-    if(hidden_layers[layer][2] == "ReLU"):
+def getActivation(hidden_layers, layerNumber):
+    if(hidden_layers[layerNumber][2] == "ReLU"):
         return nn.ReLU()
-    elif(hidden_layers[layer][2] == "Sigmoid"):
+    elif(hidden_layers[layerNumber][2] == "Sigmoid"):
         return nn.Sigmoid()
-    elif(hidden_layers[layer][2] == "Tanh"):
+    elif(hidden_layers[layerNumber][2] == "Tanh"):
         return nn.Tanh()
     return False
 
-def checkIfActivationLayerExists(hidden_layers, layer):
-    if hidden_layers[layer][2] != "None":
+def checkIfActivationLayerExists(hidden_layers, layerNumber):
+    if hidden_layers[layerNumber][2] != "None":
         return True
     return False
 
-layers = []
-currentLayer = 0
-relevantLayerIndices = []
-
 def createLayers(layerName, layerType, activationLayerType):
-    global currentLayer
-    global layers
+    global currentLayer, layers
 
     layers.append((layerName, layerType, activationLayerType))
     relevantLayerIndices.append(currentLayer*2)
@@ -53,7 +50,11 @@ class CustomizableRENN(nn.Module):
         #Add input and output layer to the hidden_layers
         self.num_layers = (len(hidden_layers))
         self.hidden_layers = hidden_layers
+        global layers, currentLayer, relevantLayerIndices
 
+        layers = []
+        currentLayer = 0
+        relevantLayerIndices = []
         for layer in range(self.num_layers):
             if layer == 0:
                 setattr(self, *createLayers(f'fc{layer}', getLayer(self.hidden_layers, layer, input_size, hidden_layers[layer][1]), self.hidden_layers[layer][2]))
@@ -99,7 +100,7 @@ def forward_hook(module, input, output):
             layer_type = type(getLayer(hidden_sizes, actualLayer))
             if (type(module) == activation_type or type(module) == layer_type):
                 correctTypes = True
-            
+
         relevantOutput = output[0].cpu().numpy()
 
         #print(layer, layers[layer], relevantOutput.shape)
@@ -111,25 +112,18 @@ def forward_hook(module, input, output):
                     layerNeurons = relevantOutput.shape[1]
                     #layers[actualLayer] = (layers[actualLayer][0], relevantOutput.shape[1], layers[layer][2:])
             dictionaryForSourceLayerNeuron[source][layer,:layerNeurons] = relevantOutput
+            # if(source == 0):
+            #   print(relevantOutput, dictionaryForSourceLayerNeuron[source][layer,:layerNeurons])
 
             #Use for array structure like: [layer, neuron, source]
-            # if(datasetChoice.value == "Small 1x1"):
-            #     if()
-            #     print(actualLayer, relevantOutput.shape, len(relevantOutput.shape))
-            #     for neuronNumber in range(layers[actualLayer][1]):
-            #         if neuronNumber < layerNeurons:
-            #             dictionaryForLayerNeuronSource[actualLayer][neuronNumber][source] = relevantOutput[0][neuronNumber]
-            #         else:
-            #             break
-            # else:
             output = relevantOutput if len(relevantOutput.shape) == 1 else relevantOutput[0]
             for neuronNumber, neuron in enumerate(output):
                 if neuronNumber < layerNeurons:
-                    dictionaryForLayerNeuronSource[actualLayer][neuronNumber][source] = neuron
+                    dictionaryForLayerNeuronSource[layer][neuronNumber][source] = neuron
                 else:
                     break
 
-        if(layer % 2 == 0 and not llm == True):
+        if(layer % 2 == 0 and llm != True):
             if(checkIfActivationLayerExists(hidden_sizes, actualLayer)):
                 layer += 1
             elif(layer == (len(layers)*2)-2):
@@ -137,13 +131,13 @@ def forward_hook(module, input, output):
             else:
                 layer += 2
         else:
-            if((layer == (len(layers)*2)-1 and not llm == True) or (layer == (len(layers))-1 and llm == True)):
+            if((layer == (len(layers)*2)-1 and llm != True) or (layer == (len(layers))-1 and llm == True)):
                 layer = 0
             else:
-                layer += 1
+                layer += 1    
 
 def attachHooks(hookLoader, model):
-    global source
+    global source, layer
 
     hooks = []  # Store the handles for each hook
     outputs = np.array([])
@@ -155,15 +149,12 @@ def attachHooks(hookLoader, model):
 
     with torch.no_grad():
         # Forward Pass
-        #convertTime = time.time()
         for source, (inputs, labels) in enumerate(hookLoader):
+            layer = 0
             # Uncomment for array structure like: [source, layer, neuron]
-            #inputs = inputs.float()
             inputs = inputs.float()
             inputs = inputs.to(device)
             _ = model(inputs)
-
-        #print(f"Time passed since conversion: {time_since_start(convertTime)}")
 
     # Remove hooks after use
     for hook in hooks:
@@ -173,39 +164,39 @@ def createDictionaries(hidden_sizes, totalLayersParameter, train_samples):
     global activationsBySources, activationsByLayers, totalLayers, layerSizes
     totalLayers = totalLayersParameter
     layerSizes = [size[1] for size in hidden_sizes[:]]
-    activationsBySources = np.full((train_samples, totalLayers, np.max(layerSizes)), 100000)
-    activationsByLayers = np.full((totalLayers, np.max(layerSizes), train_samples), 100000)
-    print(activationsBySources.shape)
-    print(activationsByLayers.shape)
+    activationsBySources = np.zeros((train_samples, totalLayers, np.max(layerSizes)))
+    activationsByLayers = np.zeros((totalLayers, np.max(layerSizes), train_samples))
+    print("Hook-Dictionaries created")# - ", "Activations by Sources (Shape): ", activationsBySources.shape, " | ", "Activations by Layers (Shape): ", activationsByLayers.shape)
 
 def runHooks(train_dataloader, model, layersParameter=layers, llmType = False):
-    global layers, layer, source, dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource, activationsBySources, activationsByLayers, llm
+    global layers, dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource, activationsBySources, activationsByLayers, llm
     
     #Variables for usage within the hook
     llm = llmType
     layers = layersParameter
-    layer = 0
-    source = 0
     dictionaryForSourceLayerNeuron = activationsBySources
     dictionaryForLayerNeuronSource = activationsByLayers
 
     attachHooks(train_dataloader, model)
     activationsBySources = dictionaryForSourceLayerNeuron
     activationsByLayers = dictionaryForLayerNeuronSource
+    print("Hooks finished successfully")
 
 def initializeHook(train_dataloader, model, hidden_sizesParameter, train_samples):
     global totalLayers, layer, hidden_sizes, source, dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource, activationsBySources, activationsByLayers
+    
+    print("Initializing Hooks")
     hidden_sizes = hidden_sizesParameter
     totalLayers = len(layers)*2
     createDictionaries(hidden_sizes, totalLayers, train_samples)
-    runHooks(train_dataloader, model)
+    runHooks(train_dataloader, model, layers)
 
 def initializeEvaluationHook(hidden_sizes, eval_dataloader, eval_samples, model):
     global dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource
     
-    dictionaryForSourceLayerNeuron = np.full((eval_samples, totalLayers, np.max(layerSizes)), 100000)
-    dictionaryForLayerNeuronSource = np.full((totalLayers, np.max(layerSizes), eval_samples), 100000)
-    
+    dictionaryForSourceLayerNeuron = np.zeros((eval_samples, totalLayers, np.max(layerSizes)))
+    dictionaryForLayerNeuronSource = np.zeros((totalLayers, np.max(layerSizes), eval_samples))
+
     with torch.no_grad():
         model.eval()  # Set the model to evaluation mode
         attachHooks(eval_dataloader, model)
@@ -215,11 +206,12 @@ def initializeEvaluationHook(hidden_sizes, eval_dataloader, eval_samples, model)
 def identifyClosestSources(closestSources, outputs, mode = ""):
     global layers
     
+    print(layers)
     dictionary = activationsByLayers
     if(mode == "Sum"):
-        layerNumbersToCheck = [idx*2 for idx, (name, layer, activation) in enumerate(layers)]
+        layerNumbersToCheck = [idx*2 for idx, (name, layerNumber, activation) in enumerate(layers)]
     elif(mode == "Activation"):
-        layerNumbersToCheck = [(idx*2)+1 for idx, (name, layer, activation) in enumerate(layers) if getActivation(hidden_sizes, idx) != False]
+        layerNumbersToCheck = [(idx*2)+1 for idx, (name, layerNumber, activation) in enumerate(layers) if getActivation(hidden_sizes, idx) != False]
     else:
         layerNumbersToCheck = [idx for idx, _ in enumerate(layers)]
 

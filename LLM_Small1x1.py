@@ -14,7 +14,7 @@ small1x1 = []
 def initializePackages(randomPackage, loremPackage, devicePackage, tiktokenPackage, DataLoaderPackage, writerPackage):
     global random, lorem, device, tiktoken, DataLoader, writer
     random, lorem, device, tiktoken, DataLoader, writer = randomPackage, loremPackage, devicePackage, tiktokenPackage, DataLoaderPackage, writerPackage
-    
+
 def createUniqueCalculation(createdCalculations, xMin = 0, xMax = 9, yMin = 0, yMax = 9):
     x = random.randint(xMin, xMax)
     y = random.randint(yMin, yMax)
@@ -292,7 +292,10 @@ class GPTModel(nn.Module):
         logits = self.out_head(x)
         return logits
 
-def initializeDatasets(train_samples, test_samples, eval_samples):
+def initializeDatasets(train_samples, test_samples, eval_samples, seed):
+    global torch
+    torch.manual_seed(seed)
+
     createLLMLoaders(train_samples, test_samples, eval_samples)
 
 def initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate):

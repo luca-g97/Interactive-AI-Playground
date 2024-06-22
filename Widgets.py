@@ -75,9 +75,9 @@ def createBoolButtonChoice(description, tooltip, value = False, disabled=False, 
     )
     return boolButton
 
-datasetChoice = createLayerChoice(options=['MNIST', 'HSV-RGB', 'Cifar10', 'Small 1x1'],
+datasetChoice = createLayerChoice(options=['MNIST', 'HSV-RGB', 'Small 1x1'], # 'Cifar10', 
                                   tooltips=['60000 Written numbers from 0 to 9 (Classification)', '50000 HSV-values (Conversion to RGB)',
-                                            '50000 images from 10 classes (Classification)', '90 random values of the small 1x1 (Calculation)'], description='Dataset')
+                                            '90 random values of the small 1x1 (Calculation)'], description='Dataset') #'50000 images from 10 classes (Classification)'
 
 def updateDatasetTab():
     global datasetChoice

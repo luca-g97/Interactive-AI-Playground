@@ -1,11 +1,12 @@
 import torch
 from torch.utils.data import Dataset
+from torch.utils.data import Subset
 import torch.optim as optim
 import numpy as np
 import Customizable_RENN as RENN
 
 mnist, to_categorical, nn, DataLoader, device, writer = "", "", "", "", "", ""
-train_dataloader, test_dataloader, eval_dataloader, x_train, y_train, x_test, y_test, x_eval, y_eval, train_data = "", "", "", "", "", "", "", "", "", ""
+train_dataloader, test_dataloader, eval_dataloader, trainDataSet, testDataSet, trainSubset, testSubset, x_train, y_train = "", "", "", "", "", "", "", "", ""
 model, criterion_class, chosen_optimizer, layers = "", "", "", ""
 train_samples, eval_samples, test_samples = 1, 1, 1
 dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = [], []
@@ -15,7 +16,7 @@ def initializePackages(mnistPackage, to_categoricalPackage, nnPackage, DataLoade
     mnist, to_categorical, nn, DataLoader, device, writer = mnistPackage, to_categoricalPackage, nnPackage, DataLoaderPackage, devicePackage, writerPackage
 
 def createTrainAndTestSet():
-    global trainSet, testSet, x_train, y_train, x_test, y_test, x_eval, y_eval
+    global trainDataSet, testDataSet, x_train, y_train
     # Load the MNIST dataset
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     
@@ -41,11 +42,11 @@ def createTrainAndTestSet():
     x_test = torch.from_numpy(x_test)
     y_test = torch.from_numpy(y_test)
     
-    trainSet = (x_train, y_train)#[(torch.flatten(x), torch.flatten(y)) for x, y in zip(x_train, y_train)]
-    testSet = (x_test, y_test)#[(torch.flatten(x), torch.flatten(y)) for x, y in zip(x_test, y_test)]
+    trainDataSet = [(torch.flatten(x), torch.flatten(y)) for x, y in zip(x_train, y_train)]
+    testDataSet = [(torch.flatten(x), torch.flatten(y)) for x, y in zip(x_test, y_test)]
     
-    print(f"Created {len(trainSet)} Trainsamples & {len(testSet)} Testsamples")
-    return trainSet, testSet
+    print(f"Created {len(trainDataSet)} Trainsamples & {len(testDataSet)} Testsamples")
+    return trainDataSet, testDataSet
 
 class CustomMNISTData(Dataset):
     def __init__(self, mode="", transform = None):
@@ -70,22 +71,21 @@ class CustomMNISTData(Dataset):
 
         return torch.flatten(image), output
 
-def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_samplesParameter):
-    global train_samples, test_samples, eval_samples
-    global train_dataloader, test_dataloader, eval_dataloader, x_train, y_train, x_test, y_test, x_eval, y_eval, train_data
+def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_samplesParameter, seed):
+    global train_samples, test_samples, eval_samples, np, torch
+    global train_dataloader, test_dataloader, eval_dataloader, trainSubset, testSubset
     train_samples, test_samples, eval_samples = train_samplesParameter, test_samplesParameter, eval_samplesParameter
     
-    x_train, y_train = trainSet[0][:train_samples], trainSet[1][:train_samples]
-    x_test, y_test = testSet[0][:test_samples], testSet[1][:test_samples]
-    x_eval, y_eval = x_test[:eval_samples], y_test[:eval_samples]
+    torch.manual_seed(seed)
+    np.random.seed(seed)
 
-    train_data = CustomMNISTData(mode="Train")
-    test_data = CustomMNISTData(mode="Test")
-    eval_data = CustomMNISTData(mode="Evaluate")
-
-    train_dataloader = DataLoader(train_data, batch_size=64, shuffle=False)
-    test_dataloader = DataLoader(test_data, batch_size=64, shuffle=False)
-    eval_dataloader = DataLoader(eval_data, batch_size=1, shuffle=False)
+    trainSubset = Subset(trainDataSet, range(train_samples))
+    testSubset = Subset(testDataSet, range(test_samples))
+    evalSubset = Subset(testDataSet, range(test_samples, test_samples + eval_samples))
+    train_dataloader = DataLoader(trainSubset, batch_size=64, shuffle=False)
+    test_dataloader = DataLoader(testSubset, batch_size=64, shuffle=False)
+    eval_dataloader = DataLoader(evalSubset, batch_size=1, shuffle=False)
+    print(len(train_dataloader), len(test_dataloader), len(eval_dataloader))
 
 def initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate):
     global model, criterion_class, chosen_optimizer, layers
@@ -150,7 +150,9 @@ def trainModel(hidden_sizes, loss_function, optimizer, learning_rate, epochs):
     #return model, train_dataloader
 
 def initializeHook(hidden_sizes, train_samples):
-  hookDataLoader = DataLoader(train_data, batch_size=1, shuffle=False)
+  global trainSubset
+
+  hookDataLoader = DataLoader(trainSubset, batch_size=1, shuffle=False)
   RENN.initializeHook(hookDataLoader, model, hidden_sizes, train_samples)
 
 """# Evaluation: Output"""
@@ -158,6 +160,36 @@ def initializeHook(hidden_sizes, train_samples):
 import matplotlib.pyplot as plt
 from collections import Counter
 from PIL import Image
+
+import plotly.graph_objects as go
+import plotly.subplots as sp
+
+def showIndividualImagesPlotly(images, layer, closestSources, showClosestMostUsedSources, mode):
+    num_images = len(images)
+    num_cols = 5  # Number of columns
+    if num_images == 10:
+        num_cols = 5
+    num_rows = num_images // num_cols if (num_images // num_cols >= 1) else 1  # Number of rows
+    if num_images % num_cols != 0:
+        num_rows = num_images // num_cols + 1  # Number of rows
+
+    fig = sp.make_subplots(rows=num_rows, cols=num_cols)
+
+    for i, (image, sources, title) in enumerate(images):
+        row_index = i // num_cols
+        col_index = i % num_cols
+        fig.add_trace(go.Image(name=f'<b>{title}</b><br>Closest {showClosestMostUsedSources} Sources compared by {mode}:<br>{sources}', z=image), row=row_index + 1, col=col_index + 1)
+
+    fig.update_layout(
+        title=f'Blended closest {closestSources} sources for each neuron in layer {layer} (compared to their {mode} output)',
+        grid={'rows': num_rows, 'columns': num_cols},
+        height=225 * num_rows,  # Adjust the height of the plot
+        width=225 * num_cols,
+        hoverlabel=dict(namelength=-1)
+    )
+
+    #fig.show()
+    display(fig)
 
 def showImagesUnweighted(originalImage, blendedSourceImageActivation, blendedSourceImageSum, closestMostUsedSourceImagesActivation, closestMostUsedSourceImagesSum):
     fig, axes = plt.subplots(1, 5, figsize=(35, 35))
@@ -245,7 +277,7 @@ def getMostUsedPerLayer(sources):
         sourceCounter += 1
     return sourceCounter, mostUsed
 
-def getClosestSourcesPerNeuronAndLayer(sources, layersToCheck, mode=""):
+def getClosestSourcesPerNeuronAndLayer(sources, layersToCheck, closestSources, showClosestMostUsedSources, visualizationChoice, mode=""):
     for cLayer, layer in enumerate(sources):
         weightedSourcesPerLayer = []
         totalDifferencePerLayer = 0
@@ -261,19 +293,19 @@ def getClosestSourcesPerNeuronAndLayer(sources, layersToCheck, mode=""):
                     totalDifferencePerLayer += difference
                     weightedSourcesPerNeuron.append(WeightedSource(**baseWeightedSource))
                     weightedSourcesPerLayer.append(WeightedSource(**baseWeightedSource))
-                if not(visualizationChoice.value == "Custom" and ((cNeuron < int(visualizeCustom[cLayer][0][0])) or (cNeuron > int(visualizeCustom[cLayer][0][1])))):
-                    imagesPerLayer.append([blendIndividualImagesTogether(weightedSourcesPerNeuron), [f"Source: {source.source}, Difference: {source.difference:.10f}<br>" for source in weightedSourcesPerNeuron][:showClosestMostUsedSources], f"{mode} - Layer: {int(layersToCheck[cLayer]/2)}, Neuron: {cNeuron}"])
+                if not(visualizationChoice == "Custom" and ((cNeuron < int(visualizeCustom[cLayer][0][0])) or (cNeuron > int(visualizeCustom[cLayer][0][1])))):
+                    imagesPerLayer.append([blendIndividualImagesTogether(weightedSourcesPerNeuron, closestSources), [f"Source: {source.source}, Difference: {source.difference:.10f}<br>" for source in weightedSourcesPerNeuron][:showClosestMostUsedSources], f"{mode} - Layer: {int(layersToCheck[cLayer]/2)}, Neuron: {cNeuron}"])
 
-        if not(visualizationChoice.value == "Per Layer Only"):
-            if not(mode == "Activation" and visualizationChoice.value == "Custom" and visualizeCustom[cLayer][1] == False):
-                showIndividualImagesPlotly(imagesPerLayer, int(layersToCheck[cLayer]/2), mode)
+        if not(visualizationChoice == "Per Layer Only"):
+            if not(mode == "Activation" and visualizationChoice == "Custom" and visualizeCustom[cLayer][1] == False):
+                showIndividualImagesPlotly(imagesPerLayer, int(layersToCheck[cLayer]/2), closestSources, showClosestMostUsedSources, mode)
 
-        if not(visualizationChoice.value == "Per Neuron Only"):
-            if not(mode == "Activation" and visualizationChoice.value == "Custom" and visualizeCustom[cLayer][1] == False):
+        if not(visualizationChoice == "Per Neuron Only"):
+            if not(mode == "Activation" and visualizationChoice == "Custom" and visualizeCustom[cLayer][1] == False):
                 weightedSourcesPerLayer = sorted(weightedSourcesPerLayer, key=lambda x: x.difference)
                 sourceCounter, mostUsed = getMostUsedPerLayer(weightedSourcesPerLayer)
                 counter = Counter(mostUsed)
-                image = blendIndividualImagesTogether(counter.most_common()[:closestSources], True)
+                image = blendIndividualImagesTogether(counter.most_common()[:closestSources], closestSources, True)
 
                 plt.figure(figsize=(28,28))
                 plt.imshow(image)
@@ -292,13 +324,12 @@ def blendImagesTogether(mostUsedSources, mode):
             total += counter
 
         for sourceNumber, counter in mostUsedSources:
-            #TODO: NORMALIZATION!!!
             image = Image.blend(image, Image.fromarray(x_train[sourceNumber].numpy()*255).convert("RGBA"), (counter/total))
             weights.append(counter/total)
 
     return (image, weights)
 
-def blendIndividualImagesTogether(mostUsedSources, layer=False):
+def blendIndividualImagesTogether(mostUsedSources, closestSources, layer=False):
     image = Image.fromarray(np.zeros(shape=[28,28], dtype=np.uint8)).convert("RGBA")
 
     total = 0
@@ -360,20 +391,19 @@ def visualize(hidden_sizes, closestSources, showClosestMostUsedSources, visualiz
     
         if(visualizationChoice == "Weighted"):
             sourcesSum, outputsSum, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Sum")
-    
             mostUsedSourcesWithSum = RENN.getMostUsedSources(sourcesSum, closestSources, "Sum")
-            blendedSourceImageSum = blendImagesTogether(mostUsedSourcesWithSum[:20], "Not Weighted")
+            blendedSourceImageSum = blendImagesTogether(mostUsedSourcesWithSum[:closestSources], "Not Weighted")
     
             sourcesActivation, outputsActivation, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Activation")
             mostUsedSourcesWithActivation = RENN.getMostUsedSources(sourcesActivation, closestSources, "Activation")
-            blendedSourceImageActivation = blendImagesTogether(mostUsedSourcesWithActivation[:20], "Not Weighted")
+            blendedSourceImageActivation = blendImagesTogether(mostUsedSourcesWithActivation[:closestSources], "Not Weighted")
     
             showImagesUnweighted(createImageWithPrediction(sample.reshape(28, 28), true, prediction), blendedSourceImageActivation, blendedSourceImageSum, mostUsedSourcesWithActivation[:showClosestMostUsedSources], mostUsedSourcesWithSum[:showClosestMostUsedSources])
         else:
             sourcesSum, outputsSum, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Sum")
-            mostUsedSourcesWithSum = getClosestSourcesPerNeuronAndLayer(sourcesSum, layerNumbersToCheck, "Sum")
-    
+            mostUsedSourcesWithSum = getClosestSourcesPerNeuronAndLayer(sourcesSum, layerNumbersToCheck, closestSources, showClosestMostUsedSources, visualizationChoice, "Sum")
+
             sourcesActivation, outputsActivation, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Activation")
-            mostUsedSourcesWithActivation = getClosestSourcesPerNeuronAndLayer(sourcesActivation, layerNumbersToCheck, "Activation")
+            mostUsedSourcesWithActivation = getClosestSourcesPerNeuronAndLayer(sourcesActivation, layerNumbersToCheck, closestSources, showClosestMostUsedSources, visualizationChoice,"Activation")
     
     #print(f"Time passed since start: {time_since_start(startTime)}")
