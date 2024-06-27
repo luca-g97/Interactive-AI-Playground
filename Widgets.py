@@ -162,11 +162,12 @@ def updateNetworkTab():
         return widgets.VBox([seedChoice, layerAmountChoice, tab_nest])
 
 def initializeTrainSet(trainSetMNIST, testSetMNIST):
-    global trainDataSet, testDataSet, maxTrain, maxTest, trainSamplesChoice, testSamplesChoice, batchSizeTraining, batchSizeTest, trainingsLink, testLink
+    global datasetChoice, trainDataSet, testDataSet, maxTrain, maxTest, trainSamplesChoice, testSamplesChoice, batchSizeTraining, batchSizeTest, trainingsLink, testLink
+    datasetChoice.value = "MNIST"
     trainDataSet = trainSetMNIST
     testDataSet = testSetMNIST
-    maxTrain = 60000
-    maxTest = 10000
+    maxTrain = len(trainDataSet)
+    maxTest = len(testDataSet)
     trainSamplesChoice = createIntSlider(10000, min=1, max=maxTrain, description="Train Samples")
     testSamplesChoice = createIntSlider(2000, min=1, max=maxTest, description="Test Samples")
     batchSizeTraining = createIntSlider(64, min=1, max=maxTrain, description="Batchsize Training")
