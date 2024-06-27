@@ -92,11 +92,11 @@ normalLayerSizeChoice = [createIntSlider(value=128, min=1, max=1024, description
                          for _ in range(num_layers)]
 normalLayerChoice = [createLayerChoice(options=['Linear'],
                                        tooltips=['Fully connected layer'], description='Type') for _ in range(num_layers)]
-outputLayerChoice = createLayerChoice(options=['Linear'], tooltips=['Linear Layer'], description='Type')
+outputLayerChoice = createLayerChoice(options=['Linear'], tooltips=['Fully connected layer'], description='Type')
 activationLayerChoice = [createLayerChoice(options=['ReLU', 'Sigmoid', 'Tanh', 'None'],
                                            tooltips=['only Values >= 0', 'only Values between 0 and 1', 'normalized Values (between -1 and 1)'],
                                            description='Type') for _ in range(num_layers)]
-outputActivationLayerChoice = createLayerChoice(options=['None', 'ReLU', 'Sigmoid', 'Tanh'],
+outputActivationLayerChoice = createLayerChoice(options=['ReLU', 'Sigmoid', 'Tanh', 'None'],
                                                 tooltips=['only Values >= 0', 'only Values between 0 and 1', 'normalized Values (between -1 and 1)'], description='Type')
 
 # Function to update tab children based on the number of layers
@@ -126,7 +126,7 @@ def updateNetworkTab():
                         for _ in range(num_layers)]
 
     activationLayerChoice = [createLayerChoice(options=['ReLU', 'Sigmoid', 'Tanh', 'None'],
-                                               tooltips=['Used ideally for ...', 'Used also ideally for ...', 'Used also especially for ...'],
+                                               tooltips=['only Values >= 0', 'only Values between 0 and 1', 'normalized Values (between -1 and 1)'],
                                                description='Type') for _ in range(num_layers)]
 
     # Create a VBox for each layer with normal and activation choices
@@ -178,9 +178,9 @@ epochsChoice = createIntSlider(10, min=1, max=1000, description="Epochs")
 learningRateChoice = widgets.BoundedFloatText(value=0.001, min=0.0000001, max=10.0, step=0.0000001, description='Learning Rate', style = {'description_width': 'initial'}, disabled=False)
 
 lossChoice = createLayerChoice(options=['MSE', 'Cross-Entropy'],
-                               tooltips=['Used ideally for ...', 'Used also ideally for ...'], description='Loss-Type')
+                               tooltips=['Average Squared difference between the actual and predicted values', 'Difference between the actual and predicted probability distributions'], description='Loss-Type')
 optimizerChoice = createLayerChoice(options=['Adam', 'SGD'],
-                                    tooltips=['Used ideally for ...', 'Used also ideally for ...'], description='Optimizer-Type')
+                                    tooltips=['Adaptive learning rate and efficient handling of sparse gradients', 'SGD is best when the dataset is large, and computation efficiency is crucial'], description='Optimizer-Type')
 
 def updateTrainingTab():
     global trainSamplesChoice, testSamplesChoice, trainDataSet, testDataSet, batchSizeTraining, batchSizeTest
