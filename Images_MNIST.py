@@ -225,7 +225,7 @@ def showImagesUnweighted(originalImage, blendedSourceImageActivation, blendedSou
     axes[1].imshow(blendedSourceImageActivation[0])
     for i, source in enumerate(closestMostUsedSourceImagesActivation):
         image = createImageWithPrediction(x_train[source[0]], y_train[source[0]], predict(x_train[source[0]]))
-        axes[i+2].set_title(f"A - Source {source[0]} ({blendedSourceImageActivation[1][i]:.4f}): {image[1]}")
+        axes[i+2].set_title(f"A - Source {source[0]} ({(blendedSourceImageActivation[1][i]*100.0):.2f}%): {image[1]}")
         axes[i+2].imshow(Image.fromarray(image[0].cpu().numpy()*255))
     plt.show()
 
@@ -237,7 +237,7 @@ def showImagesUnweighted(originalImage, blendedSourceImageActivation, blendedSou
     axes[1].imshow(blendedSourceImageSum[0])
     for i, source in enumerate(closestMostUsedSourceImagesSum):
         image = createImageWithPrediction(x_train[source[0]], y_train[source[0]], predict(x_train[source[0]]))
-        axes[i+2].set_title(f"S - Source {source[0]} ({blendedSourceImageSum[1][i]:.4f}x): {image[1]}")
+        axes[i+2].set_title(f"S - Source {source[0]} ({(blendedSourceImageSum[1][i]*100.0):.2f}%): {image[1]}")
         axes[i+2].imshow(Image.fromarray(image[0].cpu().numpy()*255))
     plt.show()
 
