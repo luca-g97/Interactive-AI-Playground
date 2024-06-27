@@ -90,15 +90,14 @@ seeds = ["Random"] + [i for i in range(100000)]
 seedChoice = createSelectionSlider(value="Random", options=seeds, description="Seed")
 normalLayerSizeChoice = [createIntSlider(value=128, min=1, max=1024, description="Size", step=1)
                          for _ in range(num_layers)]
-normalLayerChoice = [createLayerChoice(options=['Linear', 'Conv.2D'],
-                                       tooltips=['Used ideally for ...', 'Used also ideally for ...'], description='Type') for _ in range(num_layers)]
-outputLayerChoice = createLayerChoice(options=['Linear', 'Conv.2D'], tooltips=['Used ideally for ...', 'Used also ideally for ...'], description='Type')
+normalLayerChoice = [createLayerChoice(options=['Linear'],
+                                       tooltips=['Fully connected layer'], description='Type') for _ in range(num_layers)]
+outputLayerChoice = createLayerChoice(options=['Linear'], tooltips=['Linear Layer'], description='Type')
 activationLayerChoice = [createLayerChoice(options=['ReLU', 'Sigmoid', 'Tanh', 'None'],
-                                           tooltips=['Used ideally for ...', 'Used also ideally for ...', 'Used also especially for ...'],
+                                           tooltips=['only Values >= 0', 'only Values between 0 and 1', 'normalized Values (between -1 and 1)'],
                                            description='Type') for _ in range(num_layers)]
 outputActivationLayerChoice = createLayerChoice(options=['None', 'ReLU', 'Sigmoid', 'Tanh'],
-                                                tooltips=['Used ideally for ...', 'Used also ideally for ...', 'Used also especially for ...'],
-                                                description='Type', )
+                                                tooltips=['only Values >= 0', 'only Values between 0 and 1', 'normalized Values (between -1 and 1)'], description='Type')
 
 # Function to update tab children based on the number of layers
 def updateNetworkTab():
@@ -113,8 +112,8 @@ def updateNetworkTab():
         num_layers = 12
 
     # Create list of ToggleButtons for normal and activation choices for each layer
-    normalLayerChoice = [createLayerChoice(options=['Linear', 'Conv.2D'],
-                                           tooltips=['Used ideally for ...', 'Used also ideally for ...'], description='Type') for _ in range(num_layers)]
+    normalLayerChoice = [createLayerChoice(options=['Linear'],
+                                           tooltips=['Fully connected layer'], description='Type') for _ in range(num_layers)]
 
     normalLayerSizeChoice = [createIntSlider(value=128, min=1, max=1024, description="Size", step=1)
                              for _ in range(num_layers)]
