@@ -6,7 +6,7 @@ import numpy as np
 import Customizable_RENN as RENN
 
 mnist, to_categorical, nn, DataLoader, device, writer = "", "", "", "", "", ""
-train_dataloader, test_dataloader, eval_dataloader, trainDataSet, testDataSet, trainSubset, testSubset, x_train, y_train = "", "", "", "", "", "", "", "", ""
+train_dataloader, test_dataloader, eval_dataloader, trainDataSet, testDataSet, trainSubset, testSubset, x_train, y_train, x_test, y_test, x_eval, y_eval = "", "", "", "", "", "", "", "", "", "", "", "", ""
 model, criterion_class, chosen_optimizer, layers = "", "", "", ""
 train_samples, eval_samples, test_samples = 1, 1, 1
 dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = [], []
@@ -48,29 +48,6 @@ def createTrainAndTestSet():
     print(f"Created {len(trainDataSet)} Trainsamples & {len(testDataSet)} Testsamples")
     return trainDataSet, testDataSet
 
-class CustomMNISTData(Dataset):
-    def __init__(self, mode="", transform = None):
-        if mode=="Train":
-            self.input = x_train
-            self.output = y_train
-        elif mode=="Test":
-            self.input = x_test
-            self.output = y_test
-        elif mode=="Evaluate":
-            self.input = x_eval
-            self.output = y_eval
-
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.input)
-
-    def __getitem__(self, idx):
-        image = self.input[idx]
-        output = self.output[idx]
-
-        return torch.flatten(image), output
-
 def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_samplesParameter, batch_size_training, batch_size_test, seed=""):
     global train_samples, test_samples, eval_samples, np, torch
     global train_dataloader, test_dataloader, eval_dataloader, trainSubset, testSubset
@@ -109,14 +86,14 @@ def initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate):
         chosen_optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
 def train(epochs=10):
-    global model, chosen_optimizer, criterion_class 
+    global model, chosen_optimizer, criterion_class
     for epoch in range(epochs):
         model.train()
         train_loss = 0.0
         for images, classification in train_dataloader:
-            #images = images.float()
+            images = images.float()
             images = images.to(device)
-            #classification = classification.float()
+            classification = classification.float()
             classification = classification.to(device)
             chosen_optimizer.zero_grad()
             output = model(images)
@@ -376,7 +353,7 @@ def createImageWithPrediction(sample, true, prediction):
 def normalizePredictions(array):
     min = np.min(array)
     max = np.max(array)
-    return (array - min) / (max - min)
+    return ((array - min) / (max - min)) if (max-min) > 0.0 else np.zeros_like(array)
 
 """# Evaluation: Code"""
 
