@@ -165,8 +165,8 @@ def initializeTrainSet(trainSetMNIST, testSetMNIST):
     global trainDataSet, testDataSet, maxTrain, maxTest, trainSamplesChoice, testSamplesChoice, batchSizeTraining, batchSizeTest, trainingsLink, testLink
     trainDataSet = trainSetMNIST
     testDataSet = testSetMNIST
-    maxTrain = len(trainDataSet)
-    maxTest = len(testDataSet)
+    maxTrain = 60000
+    maxTest = 10000
     trainSamplesChoice = createIntSlider(10000, min=1, max=maxTrain, description="Train Samples")
     testSamplesChoice = createIntSlider(2000, min=1, max=maxTest, description="Test Samples")
     batchSizeTraining = createIntSlider(64, min=1, max=maxTrain, description="Batchsize Training")
