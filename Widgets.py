@@ -183,15 +183,13 @@ optimizerChoice = createLayerChoice(options=['Adam', 'SGD'],
                                     tooltips=['Adaptive learning rate and efficient handling of sparse gradients', 'SGD is best when the dataset is large, and computation efficiency is crucial'], description='Optimizer-Type')
 
 def updateTrainingTab():
-    global trainSamplesChoice, testSamplesChoice, trainDataSet, testDataSet, batchSizeTraining, batchSizeTest
+    global datasetChoice, trainSamplesChoice, testSamplesChoice, trainDataSet, testDataSet, batchSizeTraining, batchSizeTest
 
     maxTrain = len(trainDataSet)
     maxTest = len(testDataSet)
     if(datasetChoice.value == "Small 1x1"):
         maxTrain = 80
         maxTest = 10
-
-    print(f"Max train: {maxTrain}, Max test: {maxTest}")
 
     trainSamplesChoice = createIntSlider(10000, min=1, max=maxTrain, description="Train Samples")
     testSamplesChoice = createIntSlider(2000, min=1, max=maxTest, description="Test Samples")
