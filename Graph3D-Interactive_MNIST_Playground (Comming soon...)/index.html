@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- <link href="web/projectPage.css" rel="stylesheet" type="text/css"/>     -->
+    <script type="text/javascript" src="js/jquery-1.11.2.min.js"></script>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700' rel='stylesheet' type='text/css'>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-61302010-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-61302010-1');
+    </script>
+    <title>An Interactive Node-Link Visualization of Convolutional Neural Networks</title></head>
+  <style>
+    table {
+	border-collapse: collapse;
+    }
+    h1, h2, h3 {
+	line-height:1.5em;
+	font-weight:normal;
+    }
+    body {
+	font-family: 'Source Sans Pro', sans-serif;
+	//font-family: Arial, sans-serif;
+	font-size: 18px;
+	background:#fff;
+	line-height:1.5em;
+	margin: 0;
+    }
+    td,th {
+	font-size: 18px;
+    }
+    code {
+	font-size: 16px;
+    }
+    #container {
+	width: 100%;
+	margin: 0 auto;
+	background-color: #fff;
+    }
+    #page {
+	width: 100%;
+	//background-color: #fff;
+    }
+    #pageContent {
+	padding:20px 5% 20px 5%;
+	max-width:960px;
+	margin:0 auto;
+    }
+    a {
+	color:#06c;
+    }
+    .cite {
+	background:#f0f0f0;
+	padding:10px;
+    }
+    #pdf {
+	box-shadow: 0px 0px 10px #888888;
+	width:300px;
+	height:388px;
+	margin-right:20px;
+    }
+    #pdf:hover {
+	box-shadow: 0px 0px 10px #069;
+    }
+    hr {
+	margin: 20px 0;
+    }
+    table {
+	width: 100%;
+    }
+    table, th, td {
+	padding: 0;
+	vertical-align:middle;
+	color:#000;
+    }
+    .projectTitle {
+	padding-bottom:4px;
+    }
+    .projectTitle a {
+	color: #06c;
+    }
+    .project {
+	background-color:#f9f9f9;
+	margin-bottom: 40px;
+	//border: 1px solid #c0c0c0;
+	border-top: 1px solid #ccc;
+	border-bottom: 1px solid #ccc;
+    }
+    .projects {
+	
+    }
+    .projects .image {
+	width:30%;
+	background-color:#fff;
+	//padding-right:10px;
+    }
+    .projects .text {
+	width:70%;
+	padding: 20px;
+    }
+    .hover {
+	background-color:#eeeeff;
+	//border: 1px solid #c0c0f9;
+	border-top: 1px solid #09f;
+	border-bottom: 1px solid #09f;
+    }
+    .feature {
+	border-top: 1px solid #09f;
+	border-bottom: 1px solid #09f;
+	padding: 0 2%; 
+	width: 96%;
+	background: #f0f6f9;
+    }
+    .feature img{
+	display: block;
+	margin: 0 auto;
+	padding-bottom: 1em;
+    }    
+  </style>
+  <body>
+    <div id="container">
+      <div id="page">
+	<div id="pageContent">
+	  <h1>An Interactive Node-Link Visualization of Convolutional Neural Networks</h1>
+	  <p><a href="https://adamharley.com/">Adam W. Harley</a></p>
+	  <div class="feature">
+	    <p><strong>Featured in <a href="http://www.popsci.com/gaze-inside-mind-artificial-intelligence">Popular Science</a></strong></p>
+	    <a href="http://www.popsci.com/gaze-inside-mind-artificial-intelligence"><img src="images/popsci_graphic_flat.png" alt="3D neural network visualization" style="width:100%; max-width: 811px"></a>
+	  </div>
+	  <h2>Abstract</h2>
+	  <p>Convolutional neural networks are at the core of state-of-the-art approaches to a variety of computer vision tasks. Visualizations of neural networks typically take the form of static node-link diagrams, which illustrate only the structure of a network, rather than the behavior. Motivated by this observation, this paper presents a new interactive visualization of neural networks trained on handwritten digit recognition, with the intent of showing the actual behavior of the network given user-provided input. The user can interact with the network through a drawing pad, and watch the activation patterns of the network respond in real time.</p>
+	  
+	  <h2>Demo</h2>
+	  <div class="projects">
+	    <div class="project">				
+	      <table>
+		<tr>
+		  <td class="image" style="background-color:#000"><a href="./mlp/3d.html"><img src="images/fcnet_480.png" alt="3D neural network visualization" style="width:100%"></a></td>
+		  <td class="text">
+		    <div class="projectTitle"><a href="./mlp/3d.html">3D fully-connected network visualization</a></div>
+		    This network has 784 nodes on the bottom layer (corresponding to pixels), 300 nodes in the first hidden layer, 100 nodes in the second hidden layer, and 10 nodes in the output layer (corresponding to the 10 digits). 
+		  </td>
+		</tr>
+	      </table>
+	    </div>
+	    <div class="project">
+	      <table>
+		<tr>
+		  <td class="image" style="background-color:#000"><a href="./cnn/3d.html"><img src="images/convnet_480.png" alt="3D neural network visualization" style="width:100%"></a></td>
+		  <td class="text">
+		    <div class="projectTitle"><a href="./cnn/3d.html">3D convolutional network visualization</a></div>
+		    This network has 1024 nodes on the bottom layer (corresponding to pixels), six 5x5 (stride 1) convolutional filters in the first hidden layer, followed by sixteen 5x5 (stride 1) convolutional filters in the second hidden layer, then three fully-connected layers, with 120 nodes in the first, 100 nodes in the second, and 10 nodes in the third. The convolutional layers are each followed by downsampling layer that does 2x2 max pooling (with stride 2).
+		  </td>
+		</tr>
+	      </table>
+	    </div>
+	    <div class="project">
+	      <table>
+		<tr>
+		  <td class="image" style="background-color:#000"><a href="./mlp/2d.html"><img src="images/fc_flat_480.png" alt="2D neural network visualization" style="width:100%"></a></td>
+		  <td class="text">
+		    <div class="projectTitle"><a href="./mlp/2d.html">2D fully-connected network visualization</a></div>
+		    This is the same as the first visualization, but with the nodes flattened on a plane so that they are easier to see all at once.
+		  </td>
+		</tr>
+	      </table>
+	    </div>
+	    <div class="project">
+	      <table>
+		<tr>
+		  <td class="image" style="background-color:#000"><a href="./cnn/2d.html"><img src="images/convnet_flat_480.png" alt="2D neural network visualization" style="width:100%"></a></td>
+		  <td class="text">
+		    <div class="projectTitle"><a href="./cnn/2d.html">2D convolutional network visualization</a></div>
+		    This is the same as the second visualization, but with the nodes flattened on a plane so that they are easier to see all at once.
+		  </td>
+		</tr>
+	      </table>
+	    </div>
+	  </div>			
+	  <h2>Code and implementation details</h2>
+	  <p>Our source code is freely available on github <a href="https://github.com/aharley/nn_vis">here</a>.</p>
+	  <p>A few details that might be interesting:
+	    <ul>
+	      <li>The neural networks were implemented and trained using a custom MATLAB implementation of neural networks and backpropagation, which I wrote to help myself learn the basics.</li>
+	      <li>The neural networks' training data was an augmented version of MNIST, so as a result, these networks do best when the input drawings are upright and centered.</li>
+	      <li>The math for the visualizations is written in Javascript.</li>
+	      <li>The visualization itself is written in WebGL.</li>
+	    </ul>	      
+	  <h2>Paper</h2>
+	  <div id="pdf">
+	    <a href="harley_vis_isvc15.pdf"><img src="images/paper_noshadow.png" alt="An Interactive Node-Link Visualization of Convolutional Neural Networks"></a>
+	  </div>
+	  <h2>Citation</h2>
+	  <div class="cite">A. W. Harley, "An Interactive Node-Link Visualization of Convolutional Neural Networks," in ISVC, pages 867-877, 2015</div>
+	  <p>Bibtex format:</p>
+	  <div class="cite">
+	    <code>
+	      @inproceedings{harley2015isvc,<br/>
+	      &nbsp;&nbsp;&nbsp;&nbsp;title = {An Interactive Node-Link Visualization of Convolutional Neural Networks},<br/>
+	      &nbsp;&nbsp;&nbsp;&nbsp;author = {Adam W Harley},<br/>
+	      &nbsp;&nbsp;&nbsp;&nbsp;booktitle = {ISVC},<br/>
+	      &nbsp;&nbsp;&nbsp;&nbsp;pages = {867--877},<br/>
+	      &nbsp;&nbsp;&nbsp;&nbsp;year = {2015}<br/>
+	      }
+	    </code>
+	  </div>
+	  
+	</div>
+      </div>
+    </div>
+    <script type="text/javascript">
+      $(".project" ).hover(
+      function() {
+      console.log('hovered!');
+      $( this ).addClass( "hover" );
+      }, function() {
+      $( this ).removeClass( "hover" );
+      }
+      );
+    </script>
+  </body> 
+</html>
