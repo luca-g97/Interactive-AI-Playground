@@ -5,15 +5,15 @@ import torch.optim as optim
 import numpy as np
 import Customizable_RENN as RENN
 
-mnist, to_categorical, nn, DataLoader, device, writer = "", "", "", "", "", ""
+mnist, to_categorical, nn, DataLoader, device = "", "", "", "", ""
 train_dataloader, test_dataloader, eval_dataloader, trainDataSet, testDataSet, trainSubset, testSubset, x_train, y_train, x_test, y_test, x_eval, y_eval = "", "", "", "", "", "", "", "", "", "", "", "", ""
 model, criterion_class, chosen_optimizer, layers = "", "", "", ""
 train_samples, eval_samples, test_samples = 1, 1, 1
 dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = [], []
 
-def initializePackages(mnistPackage, to_categoricalPackage, nnPackage, DataLoaderPackage, devicePackage, writerPackage):
-    global mnist, to_categorical, nn, DataLoader, device, writer
-    mnist, to_categorical, nn, DataLoader, device, writer = mnistPackage, to_categoricalPackage, nnPackage, DataLoaderPackage, devicePackage, writerPackage
+def initializePackages(mnistPackage, to_categoricalPackage, nnPackage, DataLoaderPackage, devicePackage):
+    global mnist, to_categorical, nn, DataLoader, device
+    mnist, to_categorical, nn, DataLoader, device = mnistPackage, to_categoricalPackage, nnPackage, DataLoaderPackage, devicePackage
 
 def createTrainAndTestSet():
     global trainDataSet, testDataSet, x_train, y_train
@@ -31,9 +31,6 @@ def createTrainAndTestSet():
     x_test = x_test.astype('float32') / 255.0
     y_test = to_categorical(y_test)
     
-    # Preprocess the evaluation data - make sure it the model has never seen the examples before
-    #x_eval = x_train[train_samples:(train_samples+eval_samples)]
-    #y_eval = y_train[train_samples:(train_samples+eval_samples)]
     x_eval = x_test
     y_eval = y_test
     x_eval = torch.from_numpy(x_eval)
@@ -54,26 +51,27 @@ def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_sampl
     train_samples, test_samples, eval_samples = train_samplesParameter, test_samplesParameter, eval_samplesParameter
     
     if(seed != ""):
+        print("Setting seed number to ", seed)
         torch.manual_seed(seed)
         np.random.seed(seed)
+    else: print("Setting random seed")
 
     trainSubset = Subset(trainDataSet, range(train_samples))
     testSubset = Subset(testDataSet, range(test_samples))
-    evalSubset = Subset(testDataSet, range(test_samples, test_samples + eval_samples))
+    evalSubset = Subset(testDataSet, range(eval_samples))
     train_dataloader = DataLoader(trainSubset, batch_size=batch_size_training, shuffle=False)
     test_dataloader = DataLoader(testSubset, batch_size=batch_size_test, shuffle=False)
     eval_dataloader = DataLoader(evalSubset, batch_size=1, shuffle=False)
+    print("Created all dataloaders")
 
 def initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate):
     global model, criterion_class, chosen_optimizer, layers
     input_size = torch.flatten(train_dataloader.dataset[0][0]).numel()
     output_size = torch.flatten(train_dataloader.dataset[0][1]).numel()
-    #print(input_size, output_size)
     
     model = RENN.CustomizableRENN(input_size, hidden_sizes, output_size)
     model.to(device)
     layers = np.array(RENN.layers)
-    #print(layers)
     
     if(loss_function == "MSE"):
         criterion_class = nn.MSELoss()  # For regression
@@ -97,12 +95,10 @@ def train(epochs=10):
             classification = classification.to(device)
             chosen_optimizer.zero_grad()
             output = model(images)
-            #print(output.shape, classification.shape)
             loss = criterion_class(output, classification)
             loss.backward()
             chosen_optimizer.step()
             train_loss += loss.item()
-            writer.add_scalar("Loss/train", loss, epoch)
 
         # Validation loop
         model.eval()
@@ -122,9 +118,9 @@ def train(epochs=10):
 
 def trainModel(hidden_sizes, loss_function, optimizer, learning_rate, epochs):
     initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate)
+    print("Model initialized, Starting training")
     train(epochs=epochs)
-    writer.flush()
-    #return model, train_dataloader
+    print("Training finished")
 
 def initializeHook(hidden_sizes, train_samples):
   global trainSubset
@@ -218,33 +214,12 @@ def showImagesUnweighted(originalImage, blendedSourceImageActivation, blendedSou
         axes[i+2].imshow(Image.fromarray(image[0].cpu().numpy()*255))
     plt.show()
 
-"""# Evaluation: Closest Sources"""
-
+#Import dataclass package to create a class based approach instead of normal arrays
 from dataclasses import dataclass
 @dataclass(order=True)
 class WeightedSource:
   source: int
   difference: float
-
-def getMostUsed(sources):
-    mostUsed = []
-    sourceCounter = 0
-    for currentLayer, layer in enumerate(sources):
-        for currentNeuron, neuron in enumerate(layer):
-            if(currentNeuron < layers[currentLayer][1].out_features):
-                for sourceNumber, value, difference in neuron:
-                    mostUsed.append(sourceNumber)
-                    sourceCounter += 1
-    return sourceCounter, mostUsed
-
-def getMostUsedSources(sources, weightedMode=""):
-    weightedSources = []
-
-    sourceCounter, mostUsed = getMostUsed(sources)
-    counter = Counter(mostUsed)
-
-    print(sourceCounter, counter.most_common())
-    return counter.most_common()[:closestSources]
 
 def getMostUsedPerLayer(sources):
     mostUsed = []
@@ -369,11 +344,13 @@ def visualize(hidden_sizes, closestSources, showClosestMostUsedSources, visualiz
         if(visualizationChoice == "Weighted"):
             sourcesSum, outputsSum, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Sum")
             mostUsedSourcesWithSum = RENN.getMostUsedSources(sourcesSum, closestSources, "Sum")
-            blendedSourceImageSum = blendImagesTogether(mostUsedSourcesWithSum[:closestSources], "Not Weighted")
+            #20 because otherwise the blending might not be visible anymore. Should be closestSources instead to be correct!
+            blendedSourceImageSum = blendImagesTogether(mostUsedSourcesWithSum[:20], "Not Weighted")
     
             sourcesActivation, outputsActivation, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Activation")
             mostUsedSourcesWithActivation = RENN.getMostUsedSources(sourcesActivation, closestSources, "Activation")
-            blendedSourceImageActivation = blendImagesTogether(mostUsedSourcesWithActivation[:closestSources], "Not Weighted")
+            #20 because otherwise the blending might not be visible anymore. Should be closestSources instead to be correct!
+            blendedSourceImageActivation = blendImagesTogether(mostUsedSourcesWithActivation[:20], "Not Weighted")
     
             showImagesUnweighted(createImageWithPrediction(sample.reshape(28, 28), true, prediction), blendedSourceImageActivation, blendedSourceImageSum, mostUsedSourcesWithActivation[:showClosestMostUsedSources], mostUsedSourcesWithSum[:showClosestMostUsedSources])
         else:

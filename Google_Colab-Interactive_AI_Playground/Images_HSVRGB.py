@@ -6,14 +6,14 @@ import numpy as np
 import matplotlib.patches as patches
 import Customizable_RENN as RENN
 
-colorsys, go, pio, device, DataLoader, trainSet, testSet, train_data, writer = "", "", "", "", "", "", "", "", ""
+colorsys, go, pio, device, DataLoader, trainSet, testSet, train_data = "", "", "", "", "", "", "", ""
 model, criterion_class, chosen_optimizer, layers, vectorsToShow = "", "", "", "", []
 train_samples, eval_samples, test_samples = 1, 1, 1
 dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = [], []
 
-def initializePackages(colorsysPackage, goPackage, pioPackage, DataLoaderPackage, devicePackage, writerPackage):
-    global colorsys, go, pio, device, DataLoader, writer
-    colorsys, go, pio, device, DataLoader, writer = colorsysPackage, goPackage, pioPackage, devicePackage, DataLoaderPackage, writerPackage
+def initializePackages(colorsysPackage, goPackage, pioPackage, DataLoaderPackage, devicePackage):
+    global colorsys, go, pio, device, DataLoader
+    colorsys, go, pio, device, DataLoader = colorsysPackage, goPackage, pioPackage, devicePackage, DataLoaderPackage
 
 def createTrainAndTestSet(trainSamples, testSamples, visualize=False):
     global trainSet, testSet
@@ -126,49 +126,29 @@ def draw_RGB_3D(array, traceName):
 
 """#Data Initialization"""
 
-class CustomMNISTData(Dataset):
-    def __init__(self, mode="", transform = None):
-        if mode=="Train":
-            self.input = x_train
-            self.output = y_train
-        elif mode=="Test":
-            self.input = x_test
-            self.output = y_test
-        elif mode=="Evaluate":
-            self.input = x_eval
-            self.output = y_eval
-
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.input)
-
-    def __getitem__(self, idx):
-        image = self.input[idx]
-        output = self.output[idx]
-
-        return torch.flatten(image), output
-
 def initializeDatasets(train_samplesParameter, test_samplesParameter, eval_samplesParameter, batch_size_training, batch_size_test, seed=""):
     global train_samples, test_samples, eval_samples, np, torch
     global train_dataloader, test_dataloader, eval_dataloader, x_train, y_train, x_test, y_test, x_eval, y_eval, train_data
     train_samples, test_samples, eval_samples = train_samplesParameter, test_samplesParameter, eval_samplesParameter
     
     if(seed != ""):
+        print("Setting seed number to ", seed)
         torch.manual_seed(seed)
         np.random.seed(seed)
+    else: print("Setting random seed")
 
     x_train, y_train = trainSet[0][:train_samples], trainSet[1][:train_samples]
     x_test, y_test = testSet[0][:test_samples], testSet[1][:test_samples]
     x_eval, y_eval = x_test[:eval_samples], y_test[:eval_samples]
 
-    train_data = CustomMNISTData(mode="Train")
-    test_data = CustomMNISTData(mode="Test")
-    eval_data = CustomMNISTData(mode="Evaluate")
+    train_data = [(torch.flatten(x), torch.flatten(y)) for x, y in zip(x_train, y_train)]
+    test_data = [(torch.flatten(x), torch.flatten(y)) for x, y in zip(x_test, y_test)]
+    eval_data = [(torch.flatten(x), torch.flatten(y)) for x, y in zip(x_eval, y_eval)]
 
     train_dataloader = DataLoader(train_data, batch_size=batch_size_training, shuffle=False)
     test_dataloader = DataLoader(test_data, batch_size=batch_size_test, shuffle=False)
     eval_dataloader = DataLoader(eval_data, batch_size=1, shuffle=False)
+    print("Created all dataloaders")
 
 def initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate):
     global model, criterion_class, chosen_optimizer, layers
@@ -224,7 +204,9 @@ def train(model, criterion_class,  optimizer, epochs=10):
 
 def trainModel(hidden_sizes, loss_function, optimizer, learning_rate, epochs):
     initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate)
+    print("Model initialized, Starting training")
     train(model, criterion_class, chosen_optimizer, epochs=epochs)
+    print("Training finished")
 
 def initializeHook(hidden_sizes, train_samples):
     hookDataLoader = DataLoader(train_data, batch_size=1, shuffle=False)
@@ -413,26 +395,6 @@ from dataclasses import dataclass
 class WeightedSource:
   source: int
   difference: float
-
-def getMostUsed(sources):
-    mostUsed = []
-    sourceCounter = 0
-    for currentLayer, layer in enumerate(sources):
-        for currentNeuron, neuron in enumerate(layer):
-            if(currentNeuron < layers[currentLayer][1].out_features):
-                for sourceNumber, value, difference in neuron:
-                    mostUsed.append(sourceNumber)
-                    sourceCounter += 1
-    return sourceCounter, mostUsed
-
-def getMostUsedSources(sources, weightedMode=""):
-    weightedSources = []
-
-    sourceCounter, mostUsed = getMostUsed(sources)
-    counter = Counter(mostUsed)
-
-    print(sourceCounter, counter.most_common())
-    return counter.most_common()[:closestSources]
 
 def getMostUsedPerLayer(sources):
     mostUsed = []

@@ -4,16 +4,16 @@ import torch.optim as optim
 from torch.utils.data import Dataset
 import Customizable_RENN as RENN
 
-random, lorem, device, tiktoken, DataLoader, writer = "", "", "", "", "", ""
+random, lorem, device, tiktoken, DataLoader = "", "", "", "", ""
 train_samples, test_samples, eval_samples = "", "", ""
 GPT_CONFIG_124M, settings = "", ""
 train_loader, val_loader, eval_loader, tokenizer  = "", "", "", ""
 dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = [], []
 small1x1 = []
 
-def initializePackages(randomPackage, loremPackage, devicePackage, tiktokenPackage, DataLoaderPackage, writerPackage):
-    global random, lorem, device, tiktoken, DataLoader, writer
-    random, lorem, device, tiktoken, DataLoader, writer = randomPackage, loremPackage, devicePackage, tiktokenPackage, DataLoaderPackage, writerPackage
+def initializePackages(randomPackage, loremPackage, devicePackage, tiktokenPackage, DataLoaderPackage):
+    global random, lorem, device, tiktoken, DataLoader
+    random, lorem, device, tiktoken, DataLoader = randomPackage, loremPackage, devicePackage, tiktokenPackage, DataLoaderPackage
 
 def createUniqueCalculation(createdCalculations, xMin = 0, xMax = 9, yMin = 0, yMax = 9):
     x = random.randint(xMin, xMax)
@@ -296,9 +296,12 @@ def initializeDatasets(train_samples, test_samples, eval_samples, batch_size_tra
     global torch, settings
 
     if(seed != ""):
+        print("Setting seed number to ", seed)
         torch.manual_seed(seed)
+    else: print("Setting random seed")
 
     createLLMLoaders(train_samples, test_samples, eval_samples)
+    print("Created all dataloaders")
 
 def initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate):
     global model, criterion_class, chosen_optimizer, layers
@@ -430,8 +433,10 @@ def main():
 def trainModel(hidden_sizes, loss_function, optimizer, learning_rate, epochs):
     global train_loader, eval_loader, tokenizer
     initializeTraining(hidden_sizes, loss_function, optimizer, learning_rate)
+    print("Model initialized, Starting training")
     _, _, _, train_dataloader, eval_dataloader = main()
     tokenizer = tiktoken.get_encoding("gpt2")
+    print("Training finished")
 
 def initializeHook(hidden_sizes, train_samples):
     RENN.createDictionaries(hidden_sizes, len(hidden_sizes), train_samples)
@@ -494,6 +499,6 @@ def visualize(hidden_sizes, closestSources, showClosestMostUsedSources, visualiz
         mostUsedSources = RENN.getMostUsedSources(sources, closestSources, "")
         x, y, solution, prediction = getLLMPrediction(small1x1[train_samples+test_samples+sampleNumber])
         print(prediction, f" -> Difference = {(solution) - (int(prediction) if prediction.isdigit() else 0)}")
-        print([(sourceNumber, count, small1x1[sourceNumber][3]) for sourceNumber, count in mostUsedSources])
+        print("Closest Sources in format: [SourceNumber, Occurances, Source] | ", [(sourceNumber, count, small1x1[sourceNumber][3]) for sourceNumber, count in mostUsedSources])
     
     #print(f"Time passed since start: {time_since_start(startTime)}")

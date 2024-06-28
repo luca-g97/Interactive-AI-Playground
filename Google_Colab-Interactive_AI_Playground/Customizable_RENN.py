@@ -250,5 +250,5 @@ def getMostUsedSources(sources, closestSources, weightedMode=""):
     sourceCounter, mostUsed = getMostUsed(sources, weightedMode)
     counter = Counter(mostUsed)
 
-    print(sourceCounter, counter.most_common())
+    print("Total closest Sources :" , sourceCounter, " | ", closestSources, " closest Sources (",weightedMode,") in format: [SourceNumber, Occurances]: ", counter.most_common()[:closestSources])
     return counter.most_common()[:closestSources]
