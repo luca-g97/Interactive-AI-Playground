@@ -478,7 +478,7 @@ def blendIndividualImagesTogether(mostUsedSources, closestSources, layer=False):
 
     return hsv, rgb, weighting
 
-def getClosestSourcesPerNeuronAndLayer(hsvSample, prediction, sources, closestSources, visualizationChoice, mode=""):
+def getClosestSourcesPerNeuronAndLayer(hsvSample, prediction, sources, closestSources, visualizationChoice, visualizeCustom, mode=""):
     for cLayer, layer in enumerate(sources):
         weightedSourcesPerLayer = []
         totalDifferencePerLayer = 0
@@ -539,7 +539,7 @@ def normalizePredictions(array):
     max = np.max(array)
     return (array - min) / (max - min)
 
-def visualize(hidden_sizes, closestSources, showClosestMostUsedSources, visualizationChoice):
+def visualize(hidden_sizes, closestSources, showClosestMostUsedSources, visualizationChoice, visualizeCustom):
     global dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource
 
     dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = RENN.initializeEvaluationHook(hidden_sizes, eval_dataloader, eval_samples, model)
@@ -549,10 +549,10 @@ def visualize(hidden_sizes, closestSources, showClosestMostUsedSources, visualiz
         prediction = predict(sample)
 
         sourcesSum, outputsSum, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Sum")
-        getClosestSourcesPerNeuronAndLayer(sample, createImageWithPrediction(sample, true, prediction), sourcesSum, closestSources, visualizationChoice, "Sum")
+        getClosestSourcesPerNeuronAndLayer(sample, createImageWithPrediction(sample, true, prediction), sourcesSum, closestSources, visualizationChoice, visualizeCustom, "Sum")
 
         sourcesActivation, outputsActivation, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Activation")
-        getClosestSourcesPerNeuronAndLayer(sample, createImageWithPrediction(sample, true, prediction), sourcesActivation, closestSources, visualizationChoice, "Activation")
+        getClosestSourcesPerNeuronAndLayer(sample, createImageWithPrediction(sample, true, prediction), sourcesActivation, closestSources, visualizationChoice, visualizeCustom, "Activation")
 
 def visualize3DCube(closestSources, layerNumber, neuronNumber, neuronsInLayer):
 

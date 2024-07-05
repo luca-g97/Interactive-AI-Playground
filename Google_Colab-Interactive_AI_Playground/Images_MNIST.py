@@ -229,7 +229,7 @@ def getMostUsedPerLayer(sources):
         sourceCounter += 1
     return sourceCounter, mostUsed
 
-def getClosestSourcesPerNeuronAndLayer(sources, layersToCheck, closestSources, showClosestMostUsedSources, visualizationChoice, mode=""):
+def getClosestSourcesPerNeuronAndLayer(sources, layersToCheck, closestSources, showClosestMostUsedSources, visualizationChoice, visualizeCustom, mode=""):
     for cLayer, layer in enumerate(sources):
         weightedSourcesPerLayer = []
         totalDifferencePerLayer = 0
@@ -332,7 +332,7 @@ def normalizePredictions(array):
 
 """# Evaluation: Code"""
 
-def visualize(hidden_sizes, closestSources, showClosestMostUsedSources, visualizationChoice):
+def visualize(hidden_sizes, closestSources, showClosestMostUsedSources, visualizationChoice, visualizeCustom):
     global dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource
     #Make sure to set new dictionarys for the hooks to fill - they are global!
     dictionaryForSourceLayerNeuron, dictionaryForLayerNeuronSource = RENN.initializeEvaluationHook(hidden_sizes, eval_dataloader, eval_samples, model)
@@ -355,9 +355,9 @@ def visualize(hidden_sizes, closestSources, showClosestMostUsedSources, visualiz
             showImagesUnweighted(createImageWithPrediction(sample.reshape(28, 28), true, prediction), blendedSourceImageActivation, blendedSourceImageSum, mostUsedSourcesWithActivation[:showClosestMostUsedSources], mostUsedSourcesWithSum[:showClosestMostUsedSources])
         else:
             sourcesSum, outputsSum, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Sum")
-            mostUsedSourcesWithSum = getClosestSourcesPerNeuronAndLayer(sourcesSum, layerNumbersToCheck, closestSources, showClosestMostUsedSources, visualizationChoice, "Sum")
+            mostUsedSourcesWithSum = getClosestSourcesPerNeuronAndLayer(sourcesSum, layerNumbersToCheck, closestSources, showClosestMostUsedSources, visualizationChoice, visualizeCustom, "Sum")
 
             sourcesActivation, outputsActivation, layerNumbersToCheck = RENN.identifyClosestSources(closestSources, dictionaryForSourceLayerNeuron[pos], "Activation")
-            mostUsedSourcesWithActivation = getClosestSourcesPerNeuronAndLayer(sourcesActivation, layerNumbersToCheck, closestSources, showClosestMostUsedSources, visualizationChoice,"Activation")
+            mostUsedSourcesWithActivation = getClosestSourcesPerNeuronAndLayer(sourcesActivation, layerNumbersToCheck, closestSources, showClosestMostUsedSources, visualizationChoice, visualizeCustom, "Activation")
     
     #print(f"Time passed since start: {time_since_start(startTime)}")
