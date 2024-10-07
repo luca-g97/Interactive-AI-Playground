@@ -137,7 +137,7 @@ def forward_hook(module, input, output):
             else:
                 layer += 1    
 
-def attachHooks(hookLoader, model):
+def attachHooks(hookLoader, model, llmType = False):
     global source, layer
 
     hooks = []  # Store the handles for each hook
@@ -153,7 +153,8 @@ def attachHooks(hookLoader, model):
         for source, (inputs, labels) in enumerate(hookLoader):
             layer = 0
             # Uncomment for array structure like: [source, layer, neuron]
-            inputs = inputs.float()
+            if not llmType:
+                inputs = inputs.float()
             inputs = inputs.to(device)
             _ = model(inputs)
 
@@ -178,7 +179,7 @@ def runHooks(train_dataloader, model, layersParameter=layers, llmType = False):
     dictionaryForSourceLayerNeuron = activationsBySources
     dictionaryForLayerNeuronSource = activationsByLayers
 
-    attachHooks(train_dataloader, model)
+    attachHooks(train_dataloader, model, llmType)
     activationsBySources = dictionaryForSourceLayerNeuron
     activationsByLayers = dictionaryForLayerNeuronSource
     print("Hooks finished successfully")
