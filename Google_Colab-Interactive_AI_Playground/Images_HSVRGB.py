@@ -342,7 +342,7 @@ def createComparison(hsv_sample, rgb_predicted, blendedHSV, blendedRGB, weightin
     global vectorsToShow
     
     fig, axs = plt.subplots(5, 1, figsize=(6, 6))
-    rgb_predicted = rgb_predicted.detach().numpy()[0]
+    rgb_predicted = rgb_predicted.cpu().detach().numpy()[0]
 
     original_rgb = colorsys.hsv_to_rgb(hsv_sample[0], hsv_sample[1], hsv_sample[2])
 
